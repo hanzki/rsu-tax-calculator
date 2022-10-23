@@ -1,8 +1,8 @@
-import { YMD } from "../util";
+import { isBefore, isEqual } from "date-fns";
 
 export interface IndividualTransaction {
-    date: YMD,
-    asOfDate?: YMD,
+    date: Date,
+    asOfDate?: Date,
     action: string, // TODO: Change to enum
     symbol: string,
     description: string,
@@ -13,8 +13,8 @@ export interface IndividualTransaction {
 }
 
 export interface EACTransaction {
-    date: YMD,
-    asOfDate?: YMD,
+    date: Date,
+    asOfDate?: Date,
     action: string, // TODO: Change to enum
     symbol: string,
     description: string,
@@ -27,9 +27,9 @@ export interface EACTransaction {
 }
 
 export interface EACDepositDetails {
-    purchaseDate: YMD,
+    purchaseDate: Date,
     purchasePriceUSD: number,
-    subscriptionDate: YMD,
+    subscriptionDate: Date,
     subscriptionFMVUSD: number,
     purchaseFMVUSD: number,  
 }
@@ -38,16 +38,16 @@ export interface EACSaleDetails {
     type: string,
     shares: number,
     salePriceUSD: number,
-    subscriptionDate: YMD,
+    subscriptionDate: Date,
     subscriptionFMVUSD: number,
-    purchaseDate: YMD,
+    purchaseDate: Date,
     purchasePriceUSD: number,
     purchaseFMVUSD: number,
     grossProceedsUSD: number,
 }
 
 export interface EACLapseDetails {
-    awardDate: YMD,
+    awardDate: Date,
     awardID: string,
     fmvUSD: number,
     salePriceUSD?: number,
@@ -59,8 +59,8 @@ export interface EACLapseDetails {
 export interface TaxSaleOfSecurity {
     symbol: string,
     quantity: number,
-    saleDate: YMD,
-    purchaseDate: YMD,
+    saleDate: Date,
+    purchaseDate: Date,
     salePriceEUR: number,
     saleFeesEUR: number,
     purchasePriceEUR: number,
@@ -76,7 +76,7 @@ export function filterStockTransactions(individualHistory: IndividualTransaction
 
 export type TransactionWithCostBasis = {
     transaction: IndividualTransaction,
-    purchaseDate: YMD,
+    purchaseDate: Date,
     purchasePriceUSD: number
 }
 
@@ -93,13 +93,13 @@ export function findTaxTransactions(
             return stockTransaction.action === 'Sell'
             && stockTransaction.quantity === lapseTransaction.lapseDetails?.sharesSold
             && stockTransaction.priceUSD?.toFixed(2) === lapseTransaction.lapseDetails.salePriceUSD?.toFixed(2)
-            && lapseTransaction.date.isBefore(stockTransaction.date);
+            && isBefore(lapseTransaction.date, stockTransaction.date); // TODO: Check that dates are close enough
         });
         if(sellTransaction) {
             const spaTransaction = stockTransactions.find(stockTransaction => {
                 return stockTransaction.action === 'Stock Plan Activity'
                 && stockTransaction.quantity === sellTransaction.quantity
-                && YMD.compare(stockTransaction.date, sellTransaction.date) === 0;
+                && isEqual(stockTransaction.date, sellTransaction.date);
             });
             if(spaTransaction) {
                 taxTransactions.push({
@@ -121,7 +121,7 @@ export function findTaxTransactions(
 export interface Lot {
     symbol: string,
     quantity: number,
-    purchaseDate: YMD,
+    purchaseDate: Date,
     purchasePriceUSD: number,
 }
 
@@ -130,7 +130,7 @@ export function buildLots(stockTransactions: IndividualTransaction[], eacHistory
     const lots: Lot[] = [];
     for (const spaTransaction of spaTransactions) {
         const lapseTransaction = eacHistory.find(t => {
-            return t.date.isBefore(spaTransaction.asOfDate || spaTransaction.date)
+            return isBefore(t.date, spaTransaction.asOfDate || spaTransaction.date) //TODO: Check that dates are close enough
             && t.lapseDetails?.sharesDeposited === spaTransaction.quantity;
         });
         if (!lapseTransaction?.lapseDetails) throw new Error('Could not match to lapse');
@@ -147,11 +147,11 @@ export function buildLots(stockTransactions: IndividualTransaction[], eacHistory
     const mergedLots = lots.reduce((acc: Lot[], lot: Lot) => {
         if (!acc.length) return [lot];
         const prev = acc[acc.length - 1];
-        if (YMD.compare(prev.purchaseDate, lot.purchaseDate) !== 0 || prev.purchasePriceUSD !== lot.purchasePriceUSD) {
-            return [...acc, lot];
+        if (isEqual(prev.purchaseDate, lot.purchaseDate) && prev.purchasePriceUSD === lot.purchasePriceUSD) {
+            const merged = {...prev, quantity: prev.quantity + lot.quantity};
+            return [...acc.slice(0,-1), merged];
         }
-        const merged = {...prev, quantity: prev.quantity + lot.quantity};
-        return [...acc.slice(0,-1), merged];
+        return [...acc, lot];
     }, []);
 
     return mergedLots;

@@ -1,10 +1,10 @@
 import { EACTransaction, IndividualTransaction } from "../calculator";
-import { Subset, YMD } from "../util";
+import { Subset } from "../util";
 
 export namespace IndividualHistoryData {
     export function spaTransaction(overrides?: Subset<IndividualTransaction>): IndividualTransaction {
         return {
-            date: new YMD(2021, 8, 26),
+            date: new Date(2021, 7, 26),
             action: 'Stock Plan Activity',
             symbol: 'U',
             description: 'UNITY SOFTWARE INC',
@@ -15,7 +15,7 @@ export namespace IndividualHistoryData {
 
     export function sellTransaction(overrides?: Subset<IndividualTransaction>): IndividualTransaction {
         return {
-            date: new YMD(2021, 8, 26),
+            date: new Date(2021, 7, 26),
             action: 'Sell',
             symbol: 'U',
             description: 'UNITY SOFTWARE INC',
@@ -29,7 +29,7 @@ export namespace IndividualHistoryData {
 
     export function journalTransaction(overrides?: Subset<IndividualTransaction>): IndividualTransaction {
         return {
-            date: new YMD(2021, 8, 26),
+            date: new Date(2021, 7, 26),
             action: 'Journal',
             symbol: 'U',
             description: 'Gencash transaction for SPS RS Lapse Tool',
@@ -43,14 +43,14 @@ export namespace IndividualHistoryData {
 export namespace EACHistoryData {
     export function lapseTransaction(overrides?: Subset<EACTransaction>): EACTransaction {
         return {
-            date: new YMD(2021, 8, 25),
+            date: new Date(2021, 7, 25),
             action: 'Lapse',
             symbol: 'U',
             description: 'Restricted Stock Lapse',
             quantity: 500,
             ...overrides,
             lapseDetails: {
-                awardDate:  new YMD(2020, 7, 20),
+                awardDate:  new Date(2020, 6, 20),
                 awardID: 'XXXXX',
                 fmvUSD: 40.2,
                 salePriceUSD: 36.5,

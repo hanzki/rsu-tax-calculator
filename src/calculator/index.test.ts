@@ -1,5 +1,4 @@
 import { EACHistoryData, IndividualHistoryData } from '../test/data';
-import { YMD } from '../util';
 import * as Calculator from './index';
 
 describe('calculator', () => {
@@ -29,14 +28,14 @@ describe('calculator', () => {
 
         beforeEach(() => {
             stockTransactions = [
-                IndividualHistoryData.sellTransaction({date: new YMD(2021, 8, 31), quantity: 25, priceUSD: 47}),
-                IndividualHistoryData.spaTransaction({date: new YMD(2021, 8, 30), quantity: 36}),
-                IndividualHistoryData.sellTransaction({date: new YMD(2021, 8, 26), quantity: 4, priceUSD: 50}),
-                IndividualHistoryData.spaTransaction({date: new YMD(2021, 8, 26), quantity: 4}),
+                IndividualHistoryData.sellTransaction({date: new Date(2021, 7, 31), quantity: 25, priceUSD: 47}),
+                IndividualHistoryData.spaTransaction({date: new Date(2021, 7, 30), quantity: 36}),
+                IndividualHistoryData.sellTransaction({date: new Date(2021, 7, 26), quantity: 4, priceUSD: 50}),
+                IndividualHistoryData.spaTransaction({date: new Date(2021, 7, 26), quantity: 4}),
             ];
 
             eacHistory = [
-                EACHistoryData.lapseTransaction({date: new YMD(2021, 8, 25), lapseDetails: {sharesSold: 4, salePriceUSD: 50, fmvUSD: 47}})
+                EACHistoryData.lapseTransaction({date: new Date(2021, 7, 25), lapseDetails: {sharesSold: 4, salePriceUSD: 50, fmvUSD: 47}})
             ]
 
             result = Calculator.findTaxTransactions(stockTransactions, eacHistory);
@@ -64,15 +63,15 @@ describe('calculator', () => {
         let result: Calculator.Lot[];
         beforeEach(() => {
             stockTransactions = [
-                IndividualHistoryData.spaTransaction({date: new YMD(2021, 10, 30), asOfDate: new YMD(2021, 10, 27), quantity: 42}),
-                IndividualHistoryData.spaTransaction({date: new YMD(2021, 8, 30), asOfDate: new YMD(2021, 8, 27), quantity: 42}),
-                IndividualHistoryData.spaTransaction({date: new YMD(2021, 8, 30), asOfDate: new YMD(2021, 8, 27), quantity: 5})
+                IndividualHistoryData.spaTransaction({date: new Date(2021, 9, 30), asOfDate: new Date(2021, 9, 27), quantity: 42}),
+                IndividualHistoryData.spaTransaction({date: new Date(2021, 7, 30), asOfDate: new Date(2021, 7, 27), quantity: 42}),
+                IndividualHistoryData.spaTransaction({date: new Date(2021, 7, 30), asOfDate: new Date(2021, 7, 27), quantity: 5})
             ];
 
             eacHistory = [
-                EACHistoryData.lapseTransaction({date: new YMD(2021, 10, 25), lapseDetails: {sharesDeposited: 42, fmvUSD: 69}}),
-                EACHistoryData.lapseTransaction({date: new YMD(2021, 8, 25), lapseDetails: {sharesDeposited: 42, fmvUSD: 47}}),
-                EACHistoryData.lapseTransaction({date: new YMD(2021, 8, 25), lapseDetails: {sharesDeposited: 5, fmvUSD: 47}})
+                EACHistoryData.lapseTransaction({date: new Date(2021, 9, 25), lapseDetails: {sharesDeposited: 42, fmvUSD: 69}}),
+                EACHistoryData.lapseTransaction({date: new Date(2021, 7, 25), lapseDetails: {sharesDeposited: 42, fmvUSD: 47}}),
+                EACHistoryData.lapseTransaction({date: new Date(2021, 7, 25), lapseDetails: {sharesDeposited: 5, fmvUSD: 47}})
             ]
             
             result = Calculator.buildLots(stockTransactions, eacHistory);
@@ -83,13 +82,13 @@ describe('calculator', () => {
             expect(result[0]).toMatchObject({
                 symbol: 'U',
                 quantity: 42,
-                purchaseDate: {year: 2021, month: 10, day: 25},
+                purchaseDate: new Date(2021, 9, 25),
                 purchasePriceUSD: 69,
             });
             expect(result[1]).toMatchObject({
                 symbol: 'U',
                 quantity: 47,
-                purchaseDate: {year: 2021, month: 8, day: 25},
+                purchaseDate: new Date(2021, 7, 25),
                 purchasePriceUSD: 47,
             })
         });
