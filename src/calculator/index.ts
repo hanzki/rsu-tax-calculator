@@ -1,4 +1,5 @@
-import { isBefore, isEqual } from "date-fns";
+import { compareAsc, isBefore, isEqual } from "date-fns";
+import { sortChronologicalBy } from "../util";
 
 export interface IndividualTransaction {
     date: Date,
@@ -77,7 +78,8 @@ export function filterStockTransactions(individualHistory: IndividualTransaction
 export type TransactionWithCostBasis = {
     transaction: IndividualTransaction,
     purchaseDate: Date,
-    purchasePriceUSD: number
+    purchasePriceUSD: number,
+    quantity: number,
 }
 
 export function findTaxTransactions(
@@ -106,11 +108,13 @@ export function findTaxTransactions(
                     transaction: sellTransaction,
                     purchaseDate: lapseTransaction.date,
                     purchasePriceUSD: lapseTransaction.lapseDetails?.fmvUSD as number,
+                    quantity: sellTransaction.quantity
                 });
                 taxTransactions.push({
                     transaction: spaTransaction,
                     purchaseDate: lapseTransaction.date,
                     purchasePriceUSD: lapseTransaction.lapseDetails?.fmvUSD as number,
+                    quantity: spaTransaction.quantity
                 });
             }
         }
@@ -158,11 +162,84 @@ export function buildLots(stockTransactions: IndividualTransaction[], eacHistory
 }
 
 export function calculateCostBases(stockTransactions: IndividualTransaction[], lots: Lot[]): TransactionWithCostBasis[] {
-    return [];
+    const salesTransactions = stockTransactions.filter(t => t.action === 'Sell'); // TODO: support Security Transfers
+    const chronologicalTransactions = salesTransactions.sort(sortChronologicalBy(t => t.date));
+
+    const chrologicalLots = [...lots].sort(sortChronologicalBy(t => t.purchaseDate));
+
+    const lotIterator = chrologicalLots.values();
+    let currentLot: Lot = lotIterator.next().value;
+    let sharesSoldFromCurrentLot = 0;
+
+    const results: TransactionWithCostBasis[] = []
+
+    const throwMissingLotError = () => { throw new Error("Couldn't match sell to a lot"); };
+
+    for (const transaction of chronologicalTransactions) {
+        if (!currentLot) throwMissingLotError(); // TODO: Log error?
+        if (transaction.quantity < currentLot.quantity - sharesSoldFromCurrentLot) {
+            results.push({
+                transaction,
+                purchaseDate: currentLot.purchaseDate,
+                purchasePriceUSD: currentLot.purchasePriceUSD,
+                quantity: transaction.quantity,
+            });
+            sharesSoldFromCurrentLot += transaction.quantity;
+        } else {
+            let sharesSoldFromPreviousLot = 0;
+            if (currentLot.quantity - sharesSoldFromCurrentLot > 0) {
+                results.push({
+                    transaction,
+                    purchaseDate: currentLot.purchaseDate,
+                    purchasePriceUSD: currentLot.purchasePriceUSD,
+                    quantity: currentLot.quantity - sharesSoldFromCurrentLot,
+                });
+                sharesSoldFromPreviousLot = currentLot.quantity - sharesSoldFromCurrentLot;
+            }
+            currentLot = lotIterator.next().value;
+            if(!currentLot) throwMissingLotError();
+            sharesSoldFromCurrentLot = 0;
+            results.push({
+                transaction,
+                purchaseDate: currentLot.purchaseDate,
+                purchasePriceUSD: currentLot.purchasePriceUSD,
+                quantity: transaction.quantity - sharesSoldFromPreviousLot,
+            });
+            sharesSoldFromCurrentLot = transaction.quantity - sharesSoldFromPreviousLot;
+        }
+    }
+
+    return results;
 }
 
 export function createTaxReport(transactionsWithCostBasis: TransactionWithCostBasis[]): TaxSaleOfSecurity[] {
-    return [];
+    const transactionsWithoutSpa = transactionsWithCostBasis.filter(t => t.transaction.action !== 'Stock Plan Activity');
+    const chronologicalTransactions = transactionsWithoutSpa.sort(sortChronologicalBy(t => t.transaction.date));
+
+    return chronologicalTransactions.map(transactionWithCostBasis => {
+        const quantity = transactionWithCostBasis.quantity;
+        const saleDate = transactionWithCostBasis.transaction.date;
+        const purchaseDate = transactionWithCostBasis.purchaseDate;
+        const salePriceEUR = transactionWithCostBasis.transaction.priceUSD as number; // TODO: Currency conversion
+        const saleFeesEUR = transactionWithCostBasis.transaction.feesUSD as number; // TODO: Currency conversion & fees getting double counted
+        const purchasePriceEUR = transactionWithCostBasis.purchasePriceUSD; // TODO: Currency conversion,
+        const purchaseFeesEUR = 0;
+
+        const gainloss = (salePriceEUR * quantity) - (purchasePriceEUR * quantity) - saleFeesEUR - purchaseFeesEUR;
+        return {
+            symbol: transactionWithCostBasis.transaction.symbol,
+            quantity,
+            saleDate,
+            purchaseDate,
+            salePriceEUR,
+            saleFeesEUR,
+            purchasePriceEUR,
+            purchaseFeesEUR,
+            deemedAcquisitionCostEUR: 0, // TODO: add support for hankintameno-olettama
+            capitalGainEUR: (gainloss > 0) ? gainloss : 0,
+            capitalLossEUR: (gainloss < 0) ? -gainloss : 0
+        }
+    });
 }
 
 export function calculateTaxes(

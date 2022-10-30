@@ -1,3 +1,5 @@
+import { compareAsc } from "date-fns";
+
 export type Subset<K> = {
     [attr in keyof K]?: K[attr] extends object
         ? Subset<K[attr]>
@@ -7,6 +9,10 @@ export type Subset<K> = {
         ? Subset<K[attr]> | null | undefined
         : K[attr];
 };
+
+export function sortChronologicalBy(f: (x: any) => Date) {
+    return (a: any, b: any) => compareAsc(f(a), f(b));
+}
 
 
 
