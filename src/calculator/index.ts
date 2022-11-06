@@ -1,4 +1,5 @@
 import { compareAsc, isBefore, isEqual } from "date-fns";
+import { ECBConverter } from "../ecbRates";
 import { sortChronologicalBy } from "../util";
 
 export interface IndividualTransaction {
@@ -212,7 +213,7 @@ export function calculateCostBases(stockTransactions: IndividualTransaction[], l
     return results;
 }
 
-export function createTaxReport(transactionsWithCostBasis: TransactionWithCostBasis[]): TaxSaleOfSecurity[] {
+export function createTaxReport(transactionsWithCostBasis: TransactionWithCostBasis[], ecbConverter: ECBConverter): TaxSaleOfSecurity[] {
     const transactionsWithoutSpa = transactionsWithCostBasis.filter(t => t.transaction.action !== 'Stock Plan Activity');
     const chronologicalTransactions = transactionsWithoutSpa.sort(sortChronologicalBy(t => t.transaction.date));
 
@@ -220,9 +221,18 @@ export function createTaxReport(transactionsWithCostBasis: TransactionWithCostBa
         const quantity = transactionWithCostBasis.quantity;
         const saleDate = transactionWithCostBasis.transaction.date;
         const purchaseDate = transactionWithCostBasis.purchaseDate;
-        const salePriceEUR = transactionWithCostBasis.transaction.priceUSD as number; // TODO: Currency conversion
-        const saleFeesEUR = transactionWithCostBasis.transaction.feesUSD as number; // TODO: Currency conversion & fees getting double counted
-        const purchasePriceEUR = transactionWithCostBasis.purchasePriceUSD; // TODO: Currency conversion,
+        const salePriceEUR = ecbConverter.usdToEUR(
+            transactionWithCostBasis.transaction.priceUSD as number,
+            saleDate
+        );
+        const saleFeesEUR = ecbConverter.usdToEUR(
+            transactionWithCostBasis.transaction.feesUSD as number,
+            saleDate
+        ); // TODO: fees getting double counted
+        const purchasePriceEUR = ecbConverter.usdToEUR(
+            transactionWithCostBasis.purchasePriceUSD,
+            purchaseDate
+        );
         const purchaseFeesEUR = 0;
 
         const gainloss = (salePriceEUR * quantity) - (purchasePriceEUR * quantity) - saleFeesEUR - purchaseFeesEUR;
@@ -245,6 +255,7 @@ export function createTaxReport(transactionsWithCostBasis: TransactionWithCostBa
 export function calculateTaxes(
     individualHistory: IndividualTransaction[],
     eacHistory: EACTransaction[],
+    ecbConverter: ECBConverter
     ): TaxSaleOfSecurity[] {
         // Filter out non-stock transactions
         const stockTransactions = filterStockTransactions(individualHistory);
@@ -263,7 +274,10 @@ export function calculateTaxes(
         const nonTaxTransactionsWithCostBasis = calculateCostBases(nonTaxTransactions, lots);
 
         // Create tax report
-        const taxReport = createTaxReport([...taxTransactionsWithCostBasis, ...nonTaxTransactionsWithCostBasis]);
+        const taxReport = createTaxReport([
+            ...taxTransactionsWithCostBasis,
+            ...nonTaxTransactionsWithCostBasis
+        ], ecbConverter);
 
         return taxReport;
     }

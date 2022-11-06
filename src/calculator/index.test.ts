@@ -205,7 +205,7 @@ describe('calculator', () => {
                 lossTransaction
             ]
             
-            result = Calculator.createTaxReport(transactionsWithCostBasis);
+            result = Calculator.createTaxReport(transactionsWithCostBasis, undefined as any); // TODO: Add converter test
         });
 
         it('calculates capital gain correctly', () => {
