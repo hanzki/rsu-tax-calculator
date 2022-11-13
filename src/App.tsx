@@ -1,13 +1,11 @@
 import React from 'react';
 import './App.css';
 import { Container } from '@mui/system';
-import { Box, ThemeProvider, createTheme, Card, CardContent, Typography } from '@mui/material';
-import { FileUpload, FileUploadProps } from './FileUpload/FileUpload';
-import { parseIndividualHistory } from './parser/schwabIndividualHistoryParser';
-import { parseEACHistory } from './parser/schwabEACHistoryParser';
+import { ThemeProvider, createTheme, Typography, Divider } from '@mui/material';
 import { EACTransaction, IndividualTransaction } from './calculator';
 import { Results } from './Results';
 import { ECBConverter } from './ecbRates';
+import { CalculationSettings, InputPanel } from './InputPanel';
 
 const theme = createTheme();
 
@@ -23,90 +21,30 @@ function App() {
     });
   }, []);
 
-  const individualUploadProp: FileUploadProps = {
-    accept: 'text/csv',
-    inputId: 'individual-upload',
-    backgroundColor: theme.palette.grey[100],
-    imageButton: false,
-    onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (
-            event.target.files !== null &&
-            event.target?.files?.length > 0
-        ) {
-            console.log(`Saving ${event.target.value}`)
-            
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              if(typeof event.target?.result === 'string') {
-                const data = parseIndividualHistory(event.target?.result);
-                console.debug('History', data);
-                setIndividualHistory(data);
-              }
-            };
-            reader.readAsText(event.target.files[0]);
-            
-        }
-    },
-    onDrop: (event: React.DragEvent<HTMLElement>) => {
-        console.log(`Drop ${event.dataTransfer.files[0].name}`)
-    },
+  const onCalculate = (settings: CalculationSettings) => {
+    setIndividualHistory(settings.individualHistory);
+    setEACHistory(settings.eacHistory);
   }
-  
-  const eacUploadProp: FileUploadProps = {
-    accept: 'text/csv',
-    inputId: 'eac-upload',
-    backgroundColor: theme.palette.grey[100],
-    imageButton: false,
-    onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (
-            event.target.files !== null &&
-            event.target?.files?.length > 0
-        ) {
-            console.log(`Saving2 ${event.target.value}`)
-            
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              if(typeof event.target?.result === 'string') {
-                const data = parseEACHistory(event.target?.result);
-                console.debug('EAC History', data);
-                setEACHistory(data);
-              }
-            };
-            reader.readAsText(event.target.files[0]);
-            
-        }
-    },
-    onDrop: (event: React.DragEvent<HTMLElement>) => {
-        console.log(`Drop ${event.dataTransfer.files[0].name}`)
-    },
-  }
-  
 
   return (
     <ThemeProvider theme={theme}>
       <div className="App" style={{background: '#AED6F1'}}>
-        <Container maxWidth="lg">
-          <Box sx={{ bgcolor: '#D6EAF8', height: '100vh', padding: '2rem 5%' }}>
-            <Card>
-              <CardContent>
-                <Typography>INDIVIDUAL HISTORY</Typography>
-                <FileUpload {...individualUploadProp} />
-                { individualHistory &&
-                  <Typography gutterBottom color={theme.palette.success.main}>Data Loaded!</Typography>
-                }
+        <Container maxWidth="lg" sx={{bgcolor: 'background.default'}}>
+          <Typography textAlign={'center'} variant={'h2'} gutterBottom>RSU Tax Calculator</Typography>
+          <Typography gutterBottom>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin non scelerisque diam, ac euismod elit.
+            Suspendisse aliquet mi sed tristique dapibus. Nullam facilisis sem nisi, et pretium est malesuada eu.
+            Vivamus sed faucibus ligula, ut imperdiet est. Proin venenatis ex orci, et bibendum lorem blandit id.
+            Morbi aliquet metus vitae eros consectetur volutpat. Vivamus tempor elementum mauris, eget iaculis odio pretium non.
+            Etiam metus dui, posuere a rutrum vel, elementum sit amet est. Aliquam sit amet sapien massa.</Typography>
+          <Divider variant='middle' sx={{m: 1}}/>
+          
+          <InputPanel onCalculate={onCalculate}/>
 
-                <Typography>EQUITY AWARD CENTER HISTORY</Typography>
-                <FileUpload {...eacUploadProp} />
-                { eacHistory &&
-                  <Typography gutterBottom color={theme.palette.success.main}>Data Loaded!</Typography>
-                }
-              </CardContent>
-            </Card>
+          <Divider variant='middle' sx={{m: 1}}/>
 
-            { individualHistory && eacHistory && ecbConverter &&
-              <Results individualHistory={individualHistory} eacHistory={eacHistory} ecbConverter={ecbConverter}/>
-            }
-          </Box>
+          { individualHistory && eacHistory && ecbConverter &&
+            <Results individualHistory={individualHistory} eacHistory={eacHistory} ecbConverter={ecbConverter}/>
+          }
         </Container>
       </div>
     </ThemeProvider>

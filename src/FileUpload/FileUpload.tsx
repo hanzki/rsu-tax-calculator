@@ -1,93 +1,53 @@
 import React from 'react'
 import { Box, Typography, Input } from '@mui/material'
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import FileUploadDefaultImage from './FileUploadDefaultImage.png'
+
+import UploadFileIcon from '@mui/icons-material/UploadFileRounded';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import ErrorRoundedIcon from '@mui/icons-material/ErrorRounded';
 
 export type FileUploadProps = {
-    inputId?: string
-    imageButton?: boolean
     accept: string
-    hoverLabel?: string
-    dropLabel?: string
+    success?: boolean
+    error?: boolean
+    inputId?: string
+    label?: string
     width?: string
     height?: string
     backgroundColor?: string
-    image?: {
-        url: string
-        imageStyle?: {
-            width?: string
-            height?: string
-        }
-    }
     onChange: (event: React.ChangeEvent<HTMLInputElement>) => void
-    onDrop: (event: React.DragEvent<HTMLElement>) => void
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
     accept,
+    success = false,
+    error = false,
     inputId = 'file-upload',
-    imageButton = false,
-    hoverLabel = 'Click or drag to upload file',
-    dropLabel = 'Drop file here',
-    width = '600px',
+    label = 'Click or drag to upload file',
+    width = '100px',
     height = '100px',
     backgroundColor = '#fff',
-    image: {
-        url = FileUploadDefaultImage,
-        imageStyle = {
-            height: 'inherit',
-        },
-    } = {},
     onChange,
-    onDrop,
 }) => {
-    const [imageUrl, setImageUrl] = React.useState(url)
-    const [labelText, setLabelText] = React.useState<string>(hoverLabel)
-    const [isDragOver, setIsDragOver] = React.useState<boolean>(false)
-    const [isMouseOver, setIsMouseOver] = React.useState<boolean>(false)
-    const stopDefaults = (e: React.DragEvent) => {
-        e.stopPropagation()
-        e.preventDefault()
-    }
-    const dragEvents = {
-        onMouseEnter: () => {
-            setIsMouseOver(true)
-        },
-        onMouseLeave: () => {
-            setIsMouseOver(false)
-        },
-        onDragEnter: (e: React.DragEvent) => {
-            stopDefaults(e)
-            setIsDragOver(true)
-            setLabelText(dropLabel)
-        },
-        onDragLeave: (e: React.DragEvent) => {
-            stopDefaults(e)
-            setIsDragOver(false)
-            setLabelText(hoverLabel)
-        },
-        onDragOver: stopDefaults,
-        onDrop: (e: React.DragEvent<HTMLElement>) => {
-            stopDefaults(e)
-            setLabelText(hoverLabel)
-            setIsDragOver(false)
-            if (imageButton && e.dataTransfer.files[0]) {
-                setImageUrl(URL.createObjectURL(e.dataTransfer.files[0]))
-            }
-            onDrop(e)
-        },
-    }
-
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (imageButton && event.target.files && event.target.files[0]) {
-            setImageUrl(URL.createObjectURL(event.target.files[0]))
-        }
-
         onChange(event)
     }
 
+    const icon = () => {
+        if (error) {
+            return <ErrorRoundedIcon fontSize="inherit" color='error'/>
+        }
+        if (success) {
+            return <CheckCircleRoundedIcon fontSize='inherit' color='success'/>
+        }
+        return <UploadFileIcon fontSize="inherit" />
+    }
+
     return (
-        <>
+        <Box sx={{
+            display: 'inline-flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+        }}>
             <Input
                 onChange={handleChange}
                 inputProps={{accept: accept}}
@@ -95,72 +55,53 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 id={inputId}
                 type="file"
             />
-
             <Box
                 component='label'
+                width={width}
+                height={height}
+                bgcolor={backgroundColor}
+                borderRadius={2}
                 htmlFor={inputId}
-                {...dragEvents}
                 sx={[
                     {
                         cursor: 'pointer',
                         textAlign: 'center',
+                        justifyContent: 'center',
+                        alignItems: 'center',
                         display: 'flex',
-                        '&:hover p,&:hover svg,& img': {
+                        border: 1,
+                        borderColor: 'grey.400',
+                        '&:hover p,&:hover svg': {
                             opacity: 1,
                         },
                         '& p, svg': {
-                            opacity: 0.4,
+                            opacity: 0.5,
                         },
-                        '&:hover img': {
-                            opacity: 0.3,
-                        },  
+                        fontSize: '48px'
                     },
-                    isDragOver && {
-                        '& img': {
-                            opacity: 0.3,
-                        },
-                        '& p, svg': {
-                            opacity: 1,
-                        },
-                    }
+                    success && {
+                        pointerEvents: 'none',
+                        borderColor: 'success.light',
+                        'svg': {
+                            opacity: 1
+                        }
+                    },
+                    error && {
+                        borderColor: 'error.light',
+                        'svg': {
+                            opacity: 1
+                        }
+                    },
                 ]}
             >
-                <Box
-                    width={width}
-                    height={height}
-                    bgcolor={backgroundColor}
-                    sx={{pointerEvents: 'none'}}
-                >
-                    {imageButton && (
-                        <Box position="absolute" height={height} width={width}>
-                            <img
-                                alt="file upload"
-                                src={imageUrl}
-                                style={imageStyle}
-                            />
-                        </Box>
-                    )}
-
-                    {(!imageButton || isDragOver || isMouseOver) && (
-                        <>
-                            <Box
-                                height={height}
-                                width={width}
-                                sx={{
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    position: 'absolute',
-                                }}
-                            >
-                                <CloudUploadIcon fontSize="large" />
-                                <Typography>{labelText}</Typography>
-                            </Box>
-                        </>
-                    )}
-                </Box>
+                {icon()}
             </Box>
-        </>
+            <Typography
+                component="label"
+                textAlign={'center'}
+                width={`calc(${width} + 1em)`}
+                gutterBottom
+            >{label}</Typography>
+        </Box>
     )
 }

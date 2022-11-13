@@ -28,12 +28,24 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "storybook": "start-storybook -p 6006 -s public",
+    "build-storybook": "build-storybook -s public"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
+    ],
+    "overrides": [
+      {
+        "files": [
+          "**/*.stories.*"
+        ],
+        "rules": {
+          "import/no-anonymous-default-export": "off"
+        }
+      }
     ]
   },
   "browserslist": {
@@ -49,8 +61,21 @@
     ]
   },
   "devDependencies": {
+    "@storybook/addon-actions": "^6.5.13",
+    "@storybook/addon-essentials": "^6.5.13",
+    "@storybook/addon-interactions": "^6.5.13",
+    "@storybook/addon-links": "^6.5.13",
+    "@storybook/builder-webpack5": "^6.5.13",
+    "@storybook/manager-webpack5": "^6.5.13",
+    "@storybook/node-logger": "^6.5.13",
+    "@storybook/preset-create-react-app": "^4.1.2",
+    "@storybook/react": "^6.5.13",
+    "@storybook/testing-library": "^0.0.13",
     "@types/lodash": "^4.14.188",
-    "@types/papaparse": "^5.3.5"
+    "@types/papaparse": "^5.3.5",
+    "babel-plugin-named-exports-order": "^0.0.2",
+    "prop-types": "^15.8.1",
+    "webpack": "^5.74.0"
   },
   "proxy": "https://sdw-wsrest.ecb.europa.eu"
 }
