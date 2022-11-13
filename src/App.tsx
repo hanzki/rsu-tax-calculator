@@ -30,7 +30,9 @@ function App() {
     <ThemeProvider theme={theme}>
       <div className="App" style={{background: '#AED6F1'}}>
         <Container maxWidth="lg" sx={{bgcolor: 'background.default'}}>
-          <Typography textAlign={'center'} variant={'h2'} gutterBottom>RSU Tax Calculator</Typography>
+          <Typography textAlign={'center'} variant={'h2'} gutterBottom>RSU Tax Calculator
+            <Typography component='span' sx={{color: 'text.secondary'}}>v{process.env.REACT_APP_VERSION}</Typography>
+          </Typography>
           <Typography gutterBottom>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin non scelerisque diam, ac euismod elit.
             Suspendisse aliquet mi sed tristique dapibus. Nullam facilisis sem nisi, et pretium est malesuada eu.
             Vivamus sed faucibus ligula, ut imperdiet est. Proin venenatis ex orci, et bibendum lorem blandit id.
