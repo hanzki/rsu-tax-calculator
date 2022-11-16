@@ -1,6 +1,6 @@
-import { resourceUsage } from 'process';
 import { EACHistoryData, IndividualHistoryData } from '../test/data';
 import * as Calculator from './index';
+import { ECBConverter } from "../ecbRates";
 
 describe('calculator', () => {
     describe('filterStockTransactions', () => {
@@ -204,8 +204,11 @@ describe('calculator', () => {
                 gainTransaction,
                 lossTransaction
             ]
+            const ecbConverterMock = {
+                usdToEUR: (usdValue: number) => usdValue
+            } as ECBConverter
             
-            result = Calculator.createTaxReport(transactionsWithCostBasis, undefined as any); // TODO: Add converter test
+            result = Calculator.createTaxReport(transactionsWithCostBasis, ecbConverterMock);
         });
 
         it('calculates capital gain correctly', () => {
