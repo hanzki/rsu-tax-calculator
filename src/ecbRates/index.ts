@@ -33,7 +33,7 @@ export class ECBConverter {
         this.rates = rates;
     }
 
-    usdToEUR(usdValue: number, date: Date = new Date): number {
+    usdToEUR(usdValue: number, date: Date = new Date()): number {
         const dateKey = format(date, 'yyyy-MM-dd');
 
         const eurToUSDRate = this.rates.get(dateKey);

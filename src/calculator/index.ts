@@ -1,4 +1,4 @@
-import { compareAsc, isBefore, isEqual } from "date-fns";
+import { isBefore, isEqual } from "date-fns";
 import { ECBConverter } from "../ecbRates";
 import { sortChronologicalBy } from "../util";
 

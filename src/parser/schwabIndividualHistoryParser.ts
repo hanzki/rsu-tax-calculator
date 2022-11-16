@@ -15,7 +15,7 @@ const FILE_HEADER = [FIELD_DATE, FIELD_ACTION, FIELD_SYMBOL, FIELD_DESCRIPTION, 
 
 function dropSummaryLine(input: string): string {
     const summaryLineIndex = input.indexOf("\n\"Transactions Total\"");
-    if (summaryLineIndex != -1) {
+    if (summaryLineIndex !== -1) {
         return input.substring(0, summaryLineIndex);
     } else {
         return input;
