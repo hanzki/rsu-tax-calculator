@@ -1,10 +1,11 @@
 import { Alert, AlertTitle, Box, Button, Typography } from "@mui/material"
 import React from "react"
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
-import { EACTransaction, IndividualTransaction } from "./calculator";
-import { FileUpload, FileUploadProps } from "./FileUpload/FileUpload";
-import { parseEACHistory } from "./parser/schwabEACHistoryParser";
-import { parseIndividualHistory } from "./parser/schwabIndividualHistoryParser";
+import { EACTransaction, IndividualTransaction } from "../calculator";
+import { FileUpload, FileUploadProps } from "../FileUpload/FileUpload";
+import { parseEACHistory } from "../parser/schwabEACHistoryParser";
+import { parseIndividualHistory } from "../parser/schwabIndividualHistoryParser";
+import { CalculateButton } from "./CalculateButton";
 
 export type CalculationSettings = {
     individualHistory: IndividualTransaction[],
@@ -12,7 +13,7 @@ export type CalculationSettings = {
 }
 
 export type InputPanelProps = {
-    onCalculate: (settings: CalculationSettings) => void
+    onCalculate: (settings: CalculationSettings) => Promise<void>;
 }
 
 export const InputPanel: React.FC<InputPanelProps> = ({
@@ -22,12 +23,13 @@ export const InputPanel: React.FC<InputPanelProps> = ({
     const [eacHistory, setEACHistory] = React.useState<EACTransaction[]>();
     const [individualHistoryError, setIndividualHistoryError] = React.useState();
     const [eacHistoryError, setEACHistoryError] = React.useState();
+    const [calculating, setCalculating] = React.useState(false);
     const [calculationDone, setCalculationDone] = React.useState(false);
 
     const readyToCalculate = individualHistory && eacHistory;
     const hasErrors = !!individualHistoryError || !!eacHistoryError;
 
-    const doCalculate = () => {
+    const doCalculate = async () => {
         if(!individualHistory) {
             throw new Error('Missing individual history data');
         }
@@ -36,10 +38,20 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             throw new Error('Missing EAC history data');
         }
 
-        onCalculate({
-            individualHistory,
-            eacHistory
-        });
+        setCalculating(true);
+
+        try {
+            await onCalculate({
+                individualHistory,
+                eacHistory
+            });
+        } catch (err: any) {
+            // TODO: Display error
+            console.error('Error while calculating.', err);
+            throw err;
+        }
+
+        setCalculating(false);
         setCalculationDone(true);
     }
 
@@ -128,23 +140,11 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             <Box width={'1em'}></Box>
             <FileUpload {...eacUploadProp}></FileUpload>
         </Box>
-        <Button
-            variant="contained"
-            disabled={!readyToCalculate}
+        <CalculateButton
             onClick={doCalculate}
-            sx={[
-                {alignSelf: 'center', mt: 1},
-                calculationDone && {display: 'none'}
-            ]}
-        >Calculate</Button>
-        <Button
-            variant="contained"
-            color="success"
-            endIcon={<DoneRoundedIcon />}
-            sx={[
-                {alignSelf: 'center', mt: 1, pointerEvents: 'none'},
-                !calculationDone && {display: 'none'}
-            ]}
-        >Calculated</Button>
+            disabled={!readyToCalculate}
+            success={calculationDone}
+            loading={calculating}
+        />
     </Box>
 }

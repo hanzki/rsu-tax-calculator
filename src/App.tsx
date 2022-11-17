@@ -1,19 +1,22 @@
 import React from 'react';
 import './App.css';
 import { Container } from '@mui/system';
-import { ThemeProvider, createTheme, Typography, Divider } from '@mui/material';
+import { ThemeProvider, createTheme, Typography, Divider, CircularProgress } from '@mui/material';
 import { EACTransaction, IndividualTransaction } from './calculator';
 import { Results } from './Results';
 import { ECBConverter } from './ecbRates';
-import { CalculationSettings, InputPanel } from './InputPanel';
+import { CalculationSettings, InputPanel } from './InputPanel/InputPanel';
 
 const theme = createTheme();
 
+// Arbitary delay to make the calculations feel more significant
+const CALCULATION_DELAY = 2500;
 
 function App() {
   const [individualHistory, setIndividualHistory] = React.useState<IndividualTransaction[]>();
   const [eacHistory, setEACHistory] = React.useState<EACTransaction[]>();
   const [ecbConverter, setECBConverter] = React.useState<ECBConverter>();
+  const [calculating, setCalculating] = React.useState(false);
 
   React.useEffect(() => {
     ECBConverter.loadECBData().then(converter => {
@@ -22,8 +25,16 @@ function App() {
   }, []);
 
   const onCalculate = (settings: CalculationSettings) => {
-    setIndividualHistory(settings.individualHistory);
-    setEACHistory(settings.eacHistory);
+    setCalculating(true);
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        setIndividualHistory(settings.individualHistory);
+        setEACHistory(settings.eacHistory);
+
+        setCalculating(false);
+        resolve();
+      }, CALCULATION_DELAY)
+    }) 
   }
 
   return (
@@ -43,6 +54,8 @@ function App() {
           <InputPanel onCalculate={onCalculate}/>
 
           <Divider variant='middle' sx={{m: 1}}/>
+
+          { calculating && <CircularProgress size={80}/> }
 
           { individualHistory && eacHistory && ecbConverter &&
             <Results individualHistory={individualHistory} eacHistory={eacHistory} ecbConverter={ecbConverter}/>
