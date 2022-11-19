@@ -1,6 +1,5 @@
-import { Alert, AlertTitle, Box, Button, Typography } from "@mui/material"
+import { Alert, AlertTitle, Box, Typography } from "@mui/material"
 import React from "react"
-import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import { EACTransaction, IndividualTransaction } from "../calculator";
 import { FileUpload, FileUploadProps } from "../FileUpload/FileUpload";
 import { parseEACHistory } from "../parser/schwabEACHistoryParser";

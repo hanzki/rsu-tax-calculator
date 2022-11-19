@@ -2,10 +2,10 @@ import React from 'react';
 import './App.css';
 import { Container } from '@mui/system';
 import { ThemeProvider, createTheme, Typography, Divider, CircularProgress } from '@mui/material';
-import { EACTransaction, IndividualTransaction } from './calculator';
-import { Results } from './Results';
+import { calculateTaxes, TaxSaleOfSecurity } from './calculator';
 import { ECBConverter } from './ecbRates';
 import { CalculationSettings, InputPanel } from './InputPanel/InputPanel';
+import { ResultsPanel } from './ResultsPanel/ResultsPanel';
 
 const theme = createTheme();
 
@@ -13,9 +13,8 @@ const theme = createTheme();
 const CALCULATION_DELAY = 2500;
 
 function App() {
-  const [individualHistory, setIndividualHistory] = React.useState<IndividualTransaction[]>();
-  const [eacHistory, setEACHistory] = React.useState<EACTransaction[]>();
   const [ecbConverter, setECBConverter] = React.useState<ECBConverter>();
+  const [taxReport, setTaxReport] = React.useState<TaxSaleOfSecurity[]>();
   const [calculating, setCalculating] = React.useState(false);
 
   React.useEffect(() => {
@@ -28,8 +27,10 @@ function App() {
     setCalculating(true);
     return new Promise<void>((resolve) => {
       setTimeout(() => {
-        setIndividualHistory(settings.individualHistory);
-        setEACHistory(settings.eacHistory);
+        if (!ecbConverter) {
+          throw new Error('Missing ECB currency rates');
+        }
+        setTaxReport(calculateTaxes(settings.individualHistory, settings.eacHistory, ecbConverter));
 
         setCalculating(false);
         resolve();
@@ -57,9 +58,7 @@ function App() {
 
           { calculating && <CircularProgress size={80}/> }
 
-          { individualHistory && eacHistory && ecbConverter &&
-            <Results individualHistory={individualHistory} eacHistory={eacHistory} ecbConverter={ecbConverter}/>
-          }
+          { taxReport && <ResultsPanel taxReport={taxReport}/> }
         </Container>
       </div>
     </ThemeProvider>
