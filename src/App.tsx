@@ -1,11 +1,12 @@
 import React from 'react';
 import { Container } from '@mui/system';
-import { ThemeProvider, createTheme, Typography, Divider, CircularProgress } from '@mui/material';
+import { ThemeProvider, createTheme, Typography, Divider, CircularProgress, Box } from '@mui/material';
 import { calculateTaxes, TaxSaleOfSecurity } from './calculator';
 import { ECBConverter } from './ecbRates';
 import { CalculationSettings, InputPanel } from './InputPanel/InputPanel';
 import { ResultsPanel } from './ResultsPanel/ResultsPanel';
 import { InstructionsPanel } from './InstructionsPanel/InstructionsPanel';
+import { Footer } from './Footer';
 
 const theme = createTheme();
 
@@ -38,6 +39,13 @@ function App() {
     }) 
   }
 
+  const CalculationProgress = () => <Box sx={{
+    textAlign: 'center',
+    pt: 1
+  }}>
+    <CircularProgress size={80}/>
+  </Box>
+
   return (
     <ThemeProvider theme={theme}>
       <div className="App" style={{background: '#AED6F1'}}>
@@ -54,9 +62,13 @@ function App() {
 
           <Divider variant='middle' sx={{m: 1}}/>
 
-          { calculating && <CircularProgress size={80}/> }
+          { calculating && <CalculationProgress/> }
 
           { taxReport && <ResultsPanel taxReport={taxReport}/> }
+
+          { (calculating || taxReport) && <Divider variant='middle' sx={{m: 1}}/>}
+
+          <Footer/>
         </Container>
       </div>
     </ThemeProvider>

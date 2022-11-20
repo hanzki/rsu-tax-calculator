@@ -50,7 +50,8 @@ export const InstructionsPanel: React.FC<InstructionsPanelProps> = () => {
     return <Container maxWidth="md">
         <Typography textAlign={'center'} gutterBottom>
             Welcome! This tool helps you reporting your income and transactions related to RSU stock grants to the tax authorities.
-            I made it to help myself and my collegues to navigate their taxes.
+            I made it to help myself and my collegues to navigate their taxes. This tool is not perfect and may contain errors.
+            Remember that ultimately you are solely resposible for reporting your taxes correctly.
         </Typography>
         <Alert severity="warning">
             <AlertTitle sx={{fontWeight: 'bold'}}>Warning</AlertTitle>
