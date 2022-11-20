@@ -1,6 +1,6 @@
 {
   "name": "rsu-tax-calculator",
-  "version": "0.2.0-beta",
+  "version": "0.3.0-beta",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.10.5",
