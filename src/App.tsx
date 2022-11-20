@@ -10,7 +10,7 @@ import { ResultsPanel } from './ResultsPanel/ResultsPanel';
 const theme = createTheme();
 
 // Arbitary delay to make the calculations feel more significant
-const CALCULATION_DELAY = 2500;
+const CALCULATION_DELAY = 1500;
 
 function App() {
   const [ecbConverter, setECBConverter] = React.useState<ECBConverter>();
