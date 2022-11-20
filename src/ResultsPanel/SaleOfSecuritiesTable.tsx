@@ -13,10 +13,12 @@ import { TaxSaleOfSecurity } from "../calculator";
 
 export type SaleOfSecuritiesTableProps = {
     transactions: TaxSaleOfSecurity[],
+    onDownload: () => unknown,
 }
 
 export const SaleOfSecuritiesTable: React.FC<SaleOfSecuritiesTableProps> = ({
     transactions,
+    onDownload
 }) => {
 
 return <Box>
@@ -25,7 +27,7 @@ return <Box>
         mb: 1
     }}>
         <Typography variant="h5" textAlign="left" component='span'>Sales within the period</Typography>
-        <Button variant="text" size="small" startIcon={<DownloadRoundedIcon/>} disabled>Download</Button>
+        <Button variant="text" size="small" startIcon={<DownloadRoundedIcon/>} onClick={onDownload}>Download</Button>
     </Box>
     <TableContainer component={Paper}>
         <Table sx={{ minWidth: 650 }} aria-label="simple table">

@@ -1,10 +1,18 @@
 import { Box, Typography } from "@mui/material"
 import React from "react"
 import { last, sumBy, uniq } from "lodash";
+import * as Papa from 'papaparse';
 import { TaxSaleOfSecurity } from "../calculator";
 import { PeriodSelector } from "./PeriodSelector";
 import { SaleOfSecuritiesTable } from "./SaleOfSecuritiesTable";
 import { InsightCard } from "./InsightCard";
+import { format } from "date-fns";
+
+declare global {
+    interface Navigator {
+        msSaveBlob?: (blob: any, defaultName?: string) => boolean
+    }
+}
 
 export type ResultsPanelProps = {
     taxReport: TaxSaleOfSecurity[]
@@ -27,6 +35,30 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
     const capitalGain = sumBy(salesWithinPeriod, t => t.capitalGainEUR);
     const capitalLoss = sumBy(salesWithinPeriod, t => t.capitalLossEUR);
 
+    const downloadReport = () => {
+        const fileHeader = `Created by RSU Tax Calculator v${process.env.REACT_APP_VERSION} on ${format(new Date(), 'PPP')}`;
+        const csvRows = Papa.unparse(salesWithinPeriod, {quotes: true});
+        const fileContent = `"${fileHeader}"\r\n${csvRows}`;
+        const filename = `rsu_sale_report_${period}_${format(new Date(), 'yyyyMMdd')}.csv`;
+
+        // generate a file blob
+        const blob = new Blob([fileContent], { type: 'text/csv' });
+        
+        // if navigator is present, download file immediatly
+        if (window.navigator.msSaveBlob) {
+            window.navigator.msSaveBlob(blob, filename);
+            return;
+        }
+        
+        // if navigator is not present, manually create file and download
+        const elem = window.document.createElement('a');
+        elem.href = window.URL.createObjectURL(blob);
+        elem.download = filename;
+        document.body.appendChild(elem);
+        elem.click();
+        document.body.removeChild(elem);
+    }
+
     return <Box sx={{
         padding: '10px',
         display: 'flex',
@@ -46,6 +78,6 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
             <Spacer/>
             <InsightCard title="Capital Loss" valueEUR={capitalLoss}/>
         </Box>
-        <SaleOfSecuritiesTable transactions={salesWithinPeriod}/>
+        <SaleOfSecuritiesTable transactions={salesWithinPeriod} onDownload={downloadReport}/>
     </Box>
 };
