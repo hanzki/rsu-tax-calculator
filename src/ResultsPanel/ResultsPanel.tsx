@@ -31,7 +31,9 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
     const [period, setPeriod] = React.useState(last(periods) as string);
 
     const salesWithinPeriod = taxReport.filter(t => t.saleDate.getFullYear().toString() === period);
-    const sharesSold = sumBy(salesWithinPeriod, t => t.quantity)
+    const sharesSold = sumBy(salesWithinPeriod, t => t.quantity);
+    const totalIncome = sumBy(salesWithinPeriod, t => (t.salePriceEUR * t.quantity - t.saleFeesEUR));
+    const totalCost = sumBy(salesWithinPeriod, t => (t.purchasePriceEUR * t.quantity + t.purchaseFeesEUR));
     const capitalGain = sumBy(salesWithinPeriod, t => t.capitalGainEUR);
     const capitalLoss = sumBy(salesWithinPeriod, t => t.capitalLossEUR);
 
@@ -73,6 +75,10 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
             mb: 2
         }}>
             <InsightCard title="Shares Sold" valueStr={sharesSold.toString()}/>
+            <Spacer/>
+            <InsightCard title="Total Income" valueEUR={totalIncome}/>
+            <Spacer/>
+            <InsightCard title="Total Cost" valueEUR={totalCost}/>
             <Spacer/>
             <InsightCard title="Capital Gain" valueEUR={capitalGain}/>
             <Spacer/>
