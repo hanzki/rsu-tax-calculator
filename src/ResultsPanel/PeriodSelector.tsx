@@ -31,6 +31,6 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
         aria-label="Period"
         sx={{justifyContent: 'center', mb: 2}}
     >
-        {options.map(option => <ToggleButton value={option}>{option}</ToggleButton>)}
+        {options.map(option => <ToggleButton key={`period-selector-option-${option}`} value={option}>{option}</ToggleButton>)}
     </ToggleButtonGroup>
 }

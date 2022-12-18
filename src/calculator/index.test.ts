@@ -22,44 +22,6 @@ describe('calculator', () => {
         });
     });
 
-    describe('findTaxTransactions', () => {
-        let stockTransactions: Calculator.IndividualTransaction[];
-        let eacHistory: Calculator.EACTransaction[];
-        let result: Calculator.TransactionWithCostBasis[];
-
-        beforeEach(() => {
-            stockTransactions = [
-                IndividualHistoryData.sellTransaction({date: new Date(2021, 7, 31), quantity: 25, priceUSD: 47}),
-                IndividualHistoryData.spaTransaction({date: new Date(2021, 7, 30), quantity: 36}),
-                IndividualHistoryData.sellTransaction({date: new Date(2021, 7, 26), quantity: 4, priceUSD: 50}),
-                IndividualHistoryData.spaTransaction({date: new Date(2021, 7, 26), quantity: 4}),
-            ];
-
-            eacHistory = [
-                EACHistoryData.lapseTransaction({date: new Date(2021, 7, 25), lapseDetails: {sharesSold: 4, salePriceUSD: 50, fmvUSD: 47}})
-            ]
-
-            result = Calculator.findTaxTransactions(stockTransactions, eacHistory);
-        });
-
-        it('links tax transactions correctly', () => {
-            expect(result).toEqual([
-                {
-                    transaction: stockTransactions[2],
-                    purchaseDate: eacHistory[0].date,
-                    purchasePriceUSD: eacHistory[0].lapseDetails?.fmvUSD,
-                    quantity: eacHistory[0].lapseDetails?.sharesSold
-                },
-                {
-                    transaction: stockTransactions[3],
-                    purchaseDate: eacHistory[0].date,
-                    purchasePriceUSD: eacHistory[0].lapseDetails?.fmvUSD,
-                    quantity: eacHistory[0].lapseDetails?.sharesSold
-                },
-            ]);
-        });
-    });
-
     describe('buildLots', () => {
         let stockTransactions: Calculator.IndividualTransaction[];
         let eacHistory: Calculator.EACTransaction[];

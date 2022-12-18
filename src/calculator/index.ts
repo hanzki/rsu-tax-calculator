@@ -1,6 +1,6 @@
 import { isBefore, isEqual } from "date-fns";
 import { ECBConverter } from "../ecbRates";
-import { sortChronologicalBy } from "../util";
+import { sortChronologicalBy, sortReverseChronologicalBy } from "../util";
 
 export interface IndividualTransaction {
     date: Date,
@@ -72,6 +72,12 @@ export interface TaxSaleOfSecurity {
     capitalLossEUR: number
 }
 
+/**
+ * Filters out all transactions which are not related to moving of stocks
+ * 
+ * @param individualHistory list of transactions to be filtered
+ * @returns a list of transactions with only transactions related to gain or loss of stocks
+ */
 export function filterStockTransactions(individualHistory: IndividualTransaction[]): IndividualTransaction[] {
     return individualHistory.filter(transaction => transaction.quantity)
 }
@@ -83,46 +89,6 @@ export type TransactionWithCostBasis = {
     quantity: number,
 }
 
-export function findTaxTransactions(
-    stockTransactions: IndividualTransaction[],
-    eacHistory: EACTransaction[]
-): TransactionWithCostBasis[] {
-    const taxTransactions: TransactionWithCostBasis[] = [];
-    const lapseTransactionsWithSharesSold = eacHistory.filter(transaction => {
-        return transaction.action === 'Lapse' && transaction.lapseDetails?.sharesSold
-    })
-    for (const lapseTransaction of lapseTransactionsWithSharesSold) {
-        const sellTransaction = stockTransactions.find(stockTransaction => {
-            return stockTransaction.action === 'Sell'
-            && stockTransaction.quantity === lapseTransaction.lapseDetails?.sharesSold
-            && stockTransaction.priceUSD?.toFixed(2) === lapseTransaction.lapseDetails.salePriceUSD?.toFixed(2)
-            && isBefore(lapseTransaction.date, stockTransaction.date); // TODO: Check that dates are close enough
-        });
-        if(sellTransaction) {
-            const spaTransaction = stockTransactions.find(stockTransaction => {
-                return stockTransaction.action === 'Stock Plan Activity'
-                && stockTransaction.quantity === sellTransaction.quantity
-                && isEqual(stockTransaction.date, sellTransaction.date);
-            });
-            if(spaTransaction) {
-                taxTransactions.push({
-                    transaction: sellTransaction,
-                    purchaseDate: lapseTransaction.date,
-                    purchasePriceUSD: lapseTransaction.lapseDetails?.fmvUSD as number,
-                    quantity: sellTransaction.quantity
-                });
-                taxTransactions.push({
-                    transaction: spaTransaction,
-                    purchaseDate: lapseTransaction.date,
-                    purchasePriceUSD: lapseTransaction.lapseDetails?.fmvUSD as number,
-                    quantity: spaTransaction.quantity
-                });
-            }
-        }
-    }
-    return taxTransactions;
-}
-
 export interface Lot {
     symbol: string,
     quantity: number,
@@ -130,14 +96,20 @@ export interface Lot {
     purchasePriceUSD: number,
 }
 
+/**
+ * Calculates historical lots of shares received. For each lot the function calculates the number of shares
+ * received on the date and the purchase price for the shares. Multiple shares received on the same date and
+ * purchase price are merged into one lot.
+ * 
+ * @param stockTransactions list of stock transactions from individual history. See {@link filterStockTransactions}.
+ * @param eacHistory full Equity Awards Center history
+ * @returns list of Lots
+ */
 export function buildLots(stockTransactions: IndividualTransaction[], eacHistory: EACTransaction[]): Lot[] {
     const spaTransactions = stockTransactions.filter(t => t.action === 'Stock Plan Activity');
     const lots: Lot[] = [];
     for (const spaTransaction of spaTransactions) {
-        const lapseTransaction = eacHistory.find(t => {
-            return isBefore(t.date, spaTransaction.asOfDate || spaTransaction.date) //TODO: Check that dates are close enough
-            && t.lapseDetails?.sharesDeposited === spaTransaction.quantity;
-        });
+        const lapseTransaction = findLapseTransaction(spaTransaction, eacHistory);
         if (!lapseTransaction?.lapseDetails) throw new Error('Could not match to lapse');
 
         lots.push({
@@ -162,6 +134,38 @@ export function buildLots(stockTransactions: IndividualTransaction[], eacHistory
     return mergedLots;
 }
 
+/**
+ * Finds the correct Lapse transaction from EAC history which corresponds to the shares gained in
+ * spaTransaction.
+ * @param spaTransaction transaction for gain of shares in Individual history
+ * @param eacHistory full EAC History
+ */
+function findLapseTransaction(spaTransaction: IndividualTransaction, eacHistory: EACTransaction[]): EACTransaction {
+    const sortedLapseTransactions = eacHistory
+        .filter(t => t.action === 'Lapse' && t.lapseDetails)
+        .sort(sortReverseChronologicalBy(t => t.date));
+    
+    const isBeforeSPA = (lapseTransaction: EACTransaction) => isBefore(lapseTransaction.date, spaTransaction.date);
+    const quantityMatchesSPA = (lapseTransaction: EACTransaction) =>
+        spaTransaction.quantity === lapseTransaction?.lapseDetails?.sharesDeposited
+        || spaTransaction.quantity === lapseTransaction?.lapseDetails?.sharesSold
+
+    const lapseTransaction = sortedLapseTransactions.find(lt => isBeforeSPA(lt) && quantityMatchesSPA(lt));
+
+    if (!lapseTransaction) throw new Error('Could not match to lapse');
+    return lapseTransaction;
+}
+
+/**
+ * Links share losing transactions to the correct lots in order to calculate the correct purchase price.
+ * The shares are sold in the First-In First-Out (FIFO) order. In case one lot is not enough to cover for
+ * the whole sale transaction the transaction will be split to two parts in the output.
+ * 
+ * @param stockTransactions list of stock transactions from individual history. See {@link filterStockTransactions}.
+ * @param lots list of lots. See {@link buildLots}
+ * @returns list of transactions linked with the correct purchase prices. One transaction from input might get
+ * split to multiple transactions in the output.
+ */
 export function calculateCostBases(stockTransactions: IndividualTransaction[], lots: Lot[]): TransactionWithCostBasis[] {
     const salesTransactions = stockTransactions.filter(t => t.action === 'Sell'); // TODO: support Security Transfers
     const chronologicalTransactions = salesTransactions.sort(sortChronologicalBy(t => t.date));
@@ -213,9 +217,14 @@ export function calculateCostBases(stockTransactions: IndividualTransaction[], l
     return results;
 }
 
+/**
+ * Builds tax report from the transactions.
+ * @param transactionsWithCostBasis list of transactions with correct purchase prices. See {@link calculateCostBases}.
+ * @param ecbConverter currency converter
+ * @returns list of sale of security tax report rows
+ */
 export function createTaxReport(transactionsWithCostBasis: TransactionWithCostBasis[], ecbConverter: ECBConverter): TaxSaleOfSecurity[] {
-    const transactionsWithoutSpa = transactionsWithCostBasis.filter(t => t.transaction.action !== 'Stock Plan Activity');
-    const chronologicalTransactions = transactionsWithoutSpa.sort(sortChronologicalBy(t => t.transaction.date));
+    const chronologicalTransactions = transactionsWithCostBasis.sort(sortChronologicalBy(t => t.transaction.date));
 
     return chronologicalTransactions.map(transactionWithCostBasis => {
         const quantity = transactionWithCostBasis.quantity;
@@ -260,24 +269,14 @@ export function calculateTaxes(
         // Filter out non-stock transactions
         const stockTransactions = filterStockTransactions(individualHistory);
 
-        // Find all transactions related to tax witholding
-        const taxTransactionsWithCostBasis = findTaxTransactions(stockTransactions, eacHistory);
-
-        // Filter out tax witholding transactions
-        const taxTransactions = taxTransactionsWithCostBasis.map(twcb => twcb.transaction);
-        const nonTaxTransactions = stockTransactions.filter(t => !taxTransactions.includes(t));
-
         // Build list of lots
-        const lots = buildLots(nonTaxTransactions, eacHistory);
+        const lots = buildLots(stockTransactions, eacHistory);
 
         // Calculate correct cost basis
-        const nonTaxTransactionsWithCostBasis = calculateCostBases(nonTaxTransactions, lots);
+        const transactionsWithCostBasis = calculateCostBases(stockTransactions, lots);
 
         // Create tax report
-        const taxReport = createTaxReport([
-            ...taxTransactionsWithCostBasis,
-            ...nonTaxTransactionsWithCostBasis
-        ], ecbConverter);
+        const taxReport = createTaxReport(transactionsWithCostBasis, ecbConverter);
 
         return taxReport;
     }
