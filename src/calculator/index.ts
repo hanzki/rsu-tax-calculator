@@ -182,7 +182,7 @@ export function calculateCostBases(stockTransactions: IndividualTransaction[], l
 
     for (const transaction of chronologicalTransactions) {
         if (!currentLot) throwMissingLotError(); // TODO: Log error?
-        if (transaction.quantity < currentLot.quantity - sharesSoldFromCurrentLot) {
+        if (transaction.quantity <= currentLot.quantity - sharesSoldFromCurrentLot) {
             results.push({
                 transaction,
                 purchaseDate: currentLot.purchaseDate,
