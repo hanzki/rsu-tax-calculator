@@ -142,6 +142,41 @@ describe('calculator', () => {
                 expect(() => Calculator.calculateCostBases(stockTransactions, lots)).toThrow(Error("Couldn't match sell to a lot"));
             });
         });
+
+        describe('when the lots cover all transactions exactly', () => {
+            let stockTransactions: Calculator.IndividualTransaction[];
+            let lots: Calculator.Lot[];
+            let result: Calculator.TransactionWithCostBasis[];
+            beforeEach(() => {
+                stockTransactions = [
+                    IndividualHistoryData.sellTransaction({date: new Date(2021, 9, 30), quantity: 80, priceUSD: 56}),
+                    IndividualHistoryData.sellTransaction({date: new Date(2021, 8, 25), quantity: 20, priceUSD: 80}),
+                ];
+
+                lots = [
+                    { symbol: 'U', quantity: 100, purchaseDate: new Date(2021, 7, 30), purchasePriceUSD: 69 }
+                ]
+
+                result = Calculator.calculateCostBases(stockTransactions, lots);
+            });
+
+            it('calculates cost bases correctly', () => {
+                expect(result).toEqual([
+                    {
+                        transaction: stockTransactions[1],
+                        purchaseDate: lots[0].purchaseDate,
+                        purchasePriceUSD: lots[0].purchasePriceUSD,
+                        quantity: stockTransactions[1].quantity
+                    },
+                    {
+                        transaction: stockTransactions[0],
+                        purchaseDate: lots[0].purchaseDate,
+                        purchasePriceUSD: lots[0].purchasePriceUSD,
+                        quantity: stockTransactions[0].quantity
+                    },
+                ])
+            })
+        })
     });
 
     describe('createTaxReport', () => {
