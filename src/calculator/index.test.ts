@@ -1,6 +1,7 @@
 import { EACHistoryData, IndividualHistoryData } from '../test/data';
 import * as Calculator from './index';
 import { ECBConverter } from "../ecbRates";
+import { EACTransaction } from './types';
 
 describe('calculator', () => {
     describe('filterStockTransactions', () => {
@@ -24,7 +25,7 @@ describe('calculator', () => {
 
     describe('buildLots', () => {
         let stockTransactions: Calculator.IndividualTransaction[];
-        let eacHistory: Calculator.EACTransaction[];
+        let eacHistory: EACTransaction[];
         let result: Calculator.Lot[];
         beforeEach(() => {
             stockTransactions = [

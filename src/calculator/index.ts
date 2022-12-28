@@ -1,61 +1,29 @@
 import { isBefore, isEqual } from "date-fns";
 import { ECBConverter } from "../ecbRates";
 import { sortChronologicalBy, sortReverseChronologicalBy } from "../util";
+import { EACLapseTransaction, EACTransaction, EACTransactionAction } from "./types";
+
+export enum IndividualTransactionAction {
+    CreditInterest = 'Credit Interest',
+    Journal = 'Journal',
+    MiscCashEntry = 'Misc Cash Entry',
+    SecurityTransfer = 'Security Transfer',
+    Sell = 'Sell',
+    ServiceFee = 'Service Fee',
+    StockPlanActivity = 'Stock Plan Activity',
+    WireSent = 'Wire Sent',
+}
 
 export interface IndividualTransaction {
     date: Date,
     asOfDate?: Date,
-    action: string, // TODO: Change to enum
+    action: IndividualTransactionAction,
     symbol: string,
     description: string,
     quantity: number,
     priceUSD?: number,
     feesUSD?: number,
     amountUSD?: number
-}
-
-export interface EACTransaction {
-    date: Date,
-    asOfDate?: Date,
-    action: string, // TODO: Change to enum
-    symbol: string,
-    description: string,
-    quantity: number,
-    feesUSD?: number,
-    amountUSD?: number
-    depositDetails?: EACDepositDetails,
-    saleDetails?: EACSaleDetails,
-    lapseDetails?: EACLapseDetails,
-}
-
-export interface EACDepositDetails {
-    purchaseDate: Date,
-    purchasePriceUSD: number,
-    subscriptionDate: Date,
-    subscriptionFMVUSD: number,
-    purchaseFMVUSD: number,  
-}
-
-export interface EACSaleDetails {
-    type: string,
-    shares: number,
-    salePriceUSD: number,
-    subscriptionDate: Date,
-    subscriptionFMVUSD: number,
-    purchaseDate: Date,
-    purchasePriceUSD: number,
-    purchaseFMVUSD: number,
-    grossProceedsUSD: number,
-}
-
-export interface EACLapseDetails {
-    awardDate: Date,
-    awardID: string,
-    fmvUSD: number,
-    salePriceUSD?: number,
-    sharesSold: number,
-    sharesDeposited: number,
-    totalTaxesUSD: number,
 }
 
 export interface TaxSaleOfSecurity {
@@ -140,15 +108,15 @@ export function buildLots(stockTransactions: IndividualTransaction[], eacHistory
  * @param spaTransaction transaction for gain of shares in Individual history
  * @param eacHistory full EAC History
  */
-function findLapseTransaction(spaTransaction: IndividualTransaction, eacHistory: EACTransaction[]): EACTransaction {
+function findLapseTransaction(spaTransaction: IndividualTransaction, eacHistory: EACTransaction[]): EACLapseTransaction {
     const sortedLapseTransactions = eacHistory
-        .filter(t => t.action === 'Lapse' && t.lapseDetails)
-        .sort(sortReverseChronologicalBy(t => t.date));
+        .filter(t => t.action === EACTransactionAction.Lapse)
+        .sort(sortReverseChronologicalBy(t => t.date)) as EACLapseTransaction[];
     
-    const isBeforeSPA = (lapseTransaction: EACTransaction) => isBefore(lapseTransaction.date, spaTransaction.date);
-    const quantityMatchesSPA = (lapseTransaction: EACTransaction) =>
-        spaTransaction.quantity === lapseTransaction?.lapseDetails?.sharesDeposited
-        || spaTransaction.quantity === lapseTransaction?.lapseDetails?.sharesSold
+    const isBeforeSPA = (lapseTransaction: EACLapseTransaction) => isBefore(lapseTransaction.date, spaTransaction.date);
+    const quantityMatchesSPA = (lapseTransaction: EACLapseTransaction) =>
+        spaTransaction.quantity === lapseTransaction.lapseDetails.sharesDeposited
+        || spaTransaction.quantity === lapseTransaction.lapseDetails.sharesSold
 
     const lapseTransaction = sortedLapseTransactions.find(lt => isBeforeSPA(lt) && quantityMatchesSPA(lt));
 

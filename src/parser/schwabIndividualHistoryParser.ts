@@ -1,6 +1,6 @@
 import * as Papa from 'papaparse';
 import * as _ from 'lodash';
-import { IndividualTransaction } from '../calculator';
+import { IndividualTransaction, IndividualTransactionAction } from '../calculator';
 import { firstLineAndRest, parseDates, parseQuantity, parseUSD } from './parseUtils';
 
 const FIELD_DATE = 'Date';
@@ -20,6 +20,13 @@ function dropSummaryLine(input: string): string {
     } else {
         return input;
     }
+}
+
+function parseAction(data: string): IndividualTransactionAction {
+    if (Object.values(IndividualTransactionAction).includes(data as IndividualTransactionAction)) {
+        return data as IndividualTransactionAction;
+    }
+    else throw new Error(`Unknown Individual transaction action: ${data}`);
 }
 
 export function parseIndividualHistory(input: string): IndividualTransaction[] {
@@ -47,7 +54,7 @@ export function parseIndividualHistory(input: string): IndividualTransaction[] {
         history.push({
             date,
             asOfDate,
-            action: line[FIELD_ACTION],
+            action: parseAction(line[FIELD_ACTION]),
             symbol: line[FIELD_SYMBOL],
             description: line[FIELD_DESCRIPTION],
             quantity: parseQuantity(line[FIELD_QUANTITY]),

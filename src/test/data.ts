@@ -1,4 +1,5 @@
-import { EACTransaction, IndividualTransaction } from "../calculator";
+import { IndividualTransaction } from "../calculator";
+import { EACLapseTransaction, EACTransactionAction } from "../calculator/types";
 import { Subset } from "../util";
 
 export namespace IndividualHistoryData {
@@ -41,10 +42,10 @@ export namespace IndividualHistoryData {
 } 
 
 export namespace EACHistoryData {
-    export function lapseTransaction(overrides?: Subset<EACTransaction>): EACTransaction {
+    export function lapseTransaction(overrides?: Subset<EACLapseTransaction>): EACLapseTransaction {
         return {
             date: new Date(2021, 7, 25),
-            action: 'Lapse',
+            action: EACTransactionAction.Lapse,
             symbol: 'U',
             description: 'Restricted Stock Lapse',
             quantity: 500,
@@ -59,6 +60,6 @@ export namespace EACHistoryData {
                 totalTaxesUSD: 1820,
                 ...overrides?.lapseDetails,
             },
-        } as EACTransaction
+        } as EACLapseTransaction
     }
 }

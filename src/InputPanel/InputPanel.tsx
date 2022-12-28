@@ -1,6 +1,7 @@
 import { Alert, AlertTitle, Box, Typography } from "@mui/material"
 import React from "react"
-import { EACTransaction, IndividualTransaction } from "../calculator";
+import { IndividualTransaction } from "../calculator";
+import { EACTransaction } from "../calculator/types";
 import { FileUpload, FileUploadProps } from "../FileUpload/FileUpload";
 import { parseEACHistory } from "../parser/schwabEACHistoryParser";
 import { parseIndividualHistory } from "../parser/schwabIndividualHistoryParser";
