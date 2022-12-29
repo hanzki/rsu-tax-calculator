@@ -1,30 +1,7 @@
 import { isBefore, isEqual } from "date-fns";
 import { ECBConverter } from "../ecbRates";
 import { sortChronologicalBy, sortReverseChronologicalBy } from "../util";
-import { EACLapseTransaction, EACTransaction, EACTransactionAction } from "./types";
-
-export enum IndividualTransactionAction {
-    CreditInterest = 'Credit Interest',
-    Journal = 'Journal',
-    MiscCashEntry = 'Misc Cash Entry',
-    SecurityTransfer = 'Security Transfer',
-    Sell = 'Sell',
-    ServiceFee = 'Service Fee',
-    StockPlanActivity = 'Stock Plan Activity',
-    WireSent = 'Wire Sent',
-}
-
-export interface IndividualTransaction {
-    date: Date,
-    asOfDate?: Date,
-    action: IndividualTransactionAction,
-    symbol: string,
-    description: string,
-    quantity: number,
-    priceUSD?: number,
-    feesUSD?: number,
-    amountUSD?: number
-}
+import { EAC, Individual } from "./types";
 
 export interface TaxSaleOfSecurity {
     symbol: string,
@@ -40,18 +17,26 @@ export interface TaxSaleOfSecurity {
     capitalLossEUR: number
 }
 
+export type StockTransaction = Individual.SellTransaction | Individual.StockPlanActivityTransaction;
+
+const isStockPlanActivityTransaction = (t: Individual.Transaction): t is Individual.StockPlanActivityTransaction => t.action === Individual.Action.StockPlanActivity;
+const isSellTransaction = (t: Individual.Transaction): t is Individual.SellTransaction => t.action === Individual.Action.Sell;
+const isStockTransaction = (t: Individual.Transaction): t is StockTransaction => isSellTransaction(t) || isStockPlanActivityTransaction(t);
+
+const isLapseTransaction = (t: EAC.Transaction): t is EAC.LapseTransaction => t.action === EAC.Action.Lapse;
+
 /**
  * Filters out all transactions which are not related to moving of stocks
  * 
  * @param individualHistory list of transactions to be filtered
  * @returns a list of transactions with only transactions related to gain or loss of stocks
  */
-export function filterStockTransactions(individualHistory: IndividualTransaction[]): IndividualTransaction[] {
-    return individualHistory.filter(transaction => transaction.quantity)
+export function filterStockTransactions(individualHistory: Individual.Transaction[]): StockTransaction[] {
+    return individualHistory.filter(isStockTransaction);
 }
 
 export type TransactionWithCostBasis = {
-    transaction: IndividualTransaction,
+    transaction: Individual.SellTransaction,
     purchaseDate: Date,
     purchasePriceUSD: number,
     quantity: number,
@@ -73,8 +58,8 @@ export interface Lot {
  * @param eacHistory full Equity Awards Center history
  * @returns list of Lots
  */
-export function buildLots(stockTransactions: IndividualTransaction[], eacHistory: EACTransaction[]): Lot[] {
-    const spaTransactions = stockTransactions.filter(t => t.action === 'Stock Plan Activity');
+export function buildLots(stockTransactions: StockTransaction[], eacHistory: EAC.Transaction[]): Lot[] {
+    const spaTransactions = stockTransactions.filter(isStockPlanActivityTransaction);
     const lots: Lot[] = [];
     for (const spaTransaction of spaTransactions) {
         const lapseTransaction = findLapseTransaction(spaTransaction, eacHistory);
@@ -108,13 +93,11 @@ export function buildLots(stockTransactions: IndividualTransaction[], eacHistory
  * @param spaTransaction transaction for gain of shares in Individual history
  * @param eacHistory full EAC History
  */
-function findLapseTransaction(spaTransaction: IndividualTransaction, eacHistory: EACTransaction[]): EACLapseTransaction {
-    const sortedLapseTransactions = eacHistory
-        .filter(t => t.action === EACTransactionAction.Lapse)
-        .sort(sortReverseChronologicalBy(t => t.date)) as EACLapseTransaction[];
+function findLapseTransaction(spaTransaction: Individual.StockPlanActivityTransaction, eacHistory: EAC.Transaction[]): EAC.LapseTransaction {
+    const sortedLapseTransactions = eacHistory.filter(isLapseTransaction).sort(sortReverseChronologicalBy(t => t.date));
     
-    const isBeforeSPA = (lapseTransaction: EACLapseTransaction) => isBefore(lapseTransaction.date, spaTransaction.date);
-    const quantityMatchesSPA = (lapseTransaction: EACLapseTransaction) =>
+    const isBeforeSPA = (lapseTransaction: EAC.LapseTransaction) => isBefore(lapseTransaction.date, spaTransaction.date);
+    const quantityMatchesSPA = (lapseTransaction: EAC.LapseTransaction) =>
         spaTransaction.quantity === lapseTransaction.lapseDetails.sharesDeposited
         || spaTransaction.quantity === lapseTransaction.lapseDetails.sharesSold
 
@@ -134,8 +117,8 @@ function findLapseTransaction(spaTransaction: IndividualTransaction, eacHistory:
  * @returns list of transactions linked with the correct purchase prices. One transaction from input might get
  * split to multiple transactions in the output.
  */
-export function calculateCostBases(stockTransactions: IndividualTransaction[], lots: Lot[]): TransactionWithCostBasis[] {
-    const salesTransactions = stockTransactions.filter(t => t.action === 'Sell'); // TODO: support Security Transfers
+export function calculateCostBases(stockTransactions: StockTransaction[], lots: Lot[]): TransactionWithCostBasis[] {
+    const salesTransactions = stockTransactions.filter(isSellTransaction); // TODO: support Security Transfers
     const chronologicalTransactions = salesTransactions.sort(sortChronologicalBy(t => t.date));
 
     const chrologicalLots = [...lots].sort(sortChronologicalBy(t => t.purchaseDate));
@@ -199,13 +182,13 @@ export function createTaxReport(transactionsWithCostBasis: TransactionWithCostBa
         const saleDate = transactionWithCostBasis.transaction.date;
         const purchaseDate = transactionWithCostBasis.purchaseDate;
         const salePriceEUR = ecbConverter.usdToEUR(
-            transactionWithCostBasis.transaction.priceUSD as number,
+            transactionWithCostBasis.transaction.priceUSD,
             saleDate
         );
-        const saleFeesEUR = ecbConverter.usdToEUR(
-            transactionWithCostBasis.transaction.feesUSD as number,
-            saleDate
-        ); // TODO: fees getting double counted
+        const saleFeesEUR = transactionWithCostBasis.transaction.feesUSD ?
+            ecbConverter.usdToEUR(transactionWithCostBasis.transaction.feesUSD, saleDate)
+            :
+            0; // TODO: fees getting double counted
         const purchasePriceEUR = ecbConverter.usdToEUR(
             transactionWithCostBasis.purchasePriceUSD,
             purchaseDate
@@ -230,8 +213,8 @@ export function createTaxReport(transactionsWithCostBasis: TransactionWithCostBa
 }
 
 export function calculateTaxes(
-    individualHistory: IndividualTransaction[],
-    eacHistory: EACTransaction[],
+    individualHistory: Individual.Transaction[],
+    eacHistory: EAC.Transaction[],
     ecbConverter: ECBConverter
     ): TaxSaleOfSecurity[] {
         // Filter out non-stock transactions

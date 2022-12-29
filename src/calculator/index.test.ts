@@ -1,12 +1,12 @@
 import { EACHistoryData, IndividualHistoryData } from '../test/data';
 import * as Calculator from './index';
 import { ECBConverter } from "../ecbRates";
-import { EACTransaction } from './types';
+import { EAC, Individual } from './types';
 
 describe('calculator', () => {
     describe('filterStockTransactions', () => {
-        let individualHistory: Calculator.IndividualTransaction[];
-        let result: Calculator.IndividualTransaction[];
+        let individualHistory: Individual.Transaction[];
+        let result: Individual.Transaction[];
 
         beforeEach(() => {
             individualHistory = [
@@ -24,8 +24,8 @@ describe('calculator', () => {
     });
 
     describe('buildLots', () => {
-        let stockTransactions: Calculator.IndividualTransaction[];
-        let eacHistory: EACTransaction[];
+        let stockTransactions: Calculator.StockTransaction[];
+        let eacHistory: EAC.Transaction[];
         let result: Calculator.Lot[];
         beforeEach(() => {
             stockTransactions = [
@@ -62,10 +62,10 @@ describe('calculator', () => {
 
     describe('calculateCostBases', () => {
         describe('when there is only single lot', () =>{
-            let stockTransactions: Calculator.IndividualTransaction[];
+            let stockTransactions: Calculator.StockTransaction[];
             let lots: Calculator.Lot[];
             let result: Calculator.TransactionWithCostBasis[];
-            let spaTransaction: Calculator.IndividualTransaction;
+            let spaTransaction: Individual.Transaction;
             beforeEach(() => {
                 spaTransaction = IndividualHistoryData.spaTransaction({date: new Date(2021, 8, 2), quantity: 100});
                 stockTransactions = [
@@ -92,7 +92,7 @@ describe('calculator', () => {
         });
 
         describe('when there are multiple lots', () => {
-            let stockTransactions: Calculator.IndividualTransaction[];
+            let stockTransactions: Calculator.StockTransaction[];
             let lots: Calculator.Lot[];
             let result: Calculator.TransactionWithCostBasis[];
             beforeEach(() => {
@@ -126,7 +126,7 @@ describe('calculator', () => {
         });
 
         describe('when the lots cannot cover all transactions', () =>{
-            let stockTransactions: Calculator.IndividualTransaction[];
+            let stockTransactions: Calculator.StockTransaction[];
             let lots: Calculator.Lot[];
             beforeEach(() => {
                 stockTransactions = [
@@ -145,7 +145,7 @@ describe('calculator', () => {
         });
 
         describe('when the lots cover all transactions exactly', () => {
-            let stockTransactions: Calculator.IndividualTransaction[];
+            let stockTransactions: Calculator.StockTransaction[];
             let lots: Calculator.Lot[];
             let result: Calculator.TransactionWithCostBasis[];
             beforeEach(() => {

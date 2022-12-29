@@ -1,15 +1,14 @@
 import { Alert, AlertTitle, Box, Typography } from "@mui/material"
 import React from "react"
-import { IndividualTransaction } from "../calculator";
-import { EACTransaction } from "../calculator/types";
+import { EAC, Individual } from "../calculator/types";
 import { FileUpload, FileUploadProps } from "../FileUpload/FileUpload";
 import { parseEACHistory } from "../parser/schwabEACHistoryParser";
 import { parseIndividualHistory } from "../parser/schwabIndividualHistoryParser";
 import { CalculateButton } from "./CalculateButton";
 
 export type CalculationSettings = {
-    individualHistory: IndividualTransaction[],
-    eacHistory: EACTransaction[]
+    individualHistory: Individual.Transaction[],
+    eacHistory: EAC.Transaction[]
 }
 
 export type InputPanelProps = {
@@ -19,8 +18,8 @@ export type InputPanelProps = {
 export const InputPanel: React.FC<InputPanelProps> = ({
     onCalculate
 }) => {
-    const [individualHistory, setIndividualHistory] = React.useState<IndividualTransaction[]>();
-    const [eacHistory, setEACHistory] = React.useState<EACTransaction[]>();
+    const [individualHistory, setIndividualHistory] = React.useState<Individual.Transaction[]>();
+    const [eacHistory, setEACHistory] = React.useState<EAC.Transaction[]>();
     const [individualHistoryError, setIndividualHistoryError] = React.useState();
     const [eacHistoryError, setEACHistoryError] = React.useState();
     const [calculating, setCalculating] = React.useState(false);

@@ -1,6 +1,6 @@
 import * as Papa from 'papaparse';
 import * as _ from 'lodash';
-import { EACTransaction, EACTransactionAction } from '../calculator/types';
+import { EAC } from '../calculator/types';
 import { firstLineAndRest, parseDates, parseQuantity, parseUSD } from './parseUtils';
 
 const FIELD_EMPTY = '';
@@ -92,14 +92,14 @@ function readLine(data: string[], header: string[]): { [key in typeof header[num
     return line;
 }
 
-function parseAction(data: string): EACTransactionAction {
-    if (Object.values(EACTransactionAction).includes(data as EACTransactionAction)) {
-        return data as EACTransactionAction;
+function parseAction(data: string): EAC.Action {
+    if (Object.values(EAC.Action).includes(data as EAC.Action)) {
+        return data as EAC.Action;
     }
     else throw new Error(`Unknown EAC transaction action: ${data}`);
 }
 
-export function parseEACHistory(input: string): EACTransaction[] {
+export function parseEACHistory(input: string): EAC.Transaction[] {
     const [firstLine, rest] = firstLineAndRest(input);
     if (!firstLine.startsWith("\"Transaction Details for Equity Awards Center")) {
         console.error(`Got: "${firstLine}"`);
@@ -116,10 +116,10 @@ export function parseEACHistory(input: string): EACTransaction[] {
         throw new Error('Unexpect file contents');
     }
 
-    const history: EACTransaction[] = [];
+    const history: EAC.Transaction[] = [];
     for (let i = 1; i < parsed.data.length; i++) {
         const line = readLine(parsed.data[i] as string[], FILE_HEADER);
-        const eacTransaction: Partial<EACTransaction> = {
+        const eacTransaction: any = {
             date: parseDates(line[FIELD_DATE])[0],
             action: parseAction(line[FIELD_ACTION]),
             symbol: line[FIELD_SYMBOL],
@@ -129,7 +129,7 @@ export function parseEACHistory(input: string): EACTransaction[] {
             amountUSD: parseUSD(line[FIELD_AMOUNT])
         }
 
-        if (eacTransaction.action === EACTransactionAction.Deposit) {
+        if (eacTransaction.action === EAC.Action.Deposit) {
             if (!_.isEqual(parsed.data[i+1], DEPOSIT_HEADER)) {
                 console.error(`Got: "${parsed.data[i+1]}", Expected: "${DEPOSIT_HEADER}"`);
                 throw new Error('Unexpect file contents');
@@ -146,7 +146,7 @@ export function parseEACHistory(input: string): EACTransaction[] {
             i = i+2;
         }
 
-        if (eacTransaction.action === EACTransactionAction.Sale) {
+        if (eacTransaction.action === EAC.Action.Sale) {
             if (!_.isEqual(parsed.data[i+1], SALE_HEADER)) {
                 console.error(`Got: "${parsed.data[i+1]}", Expected: "${SALE_HEADER}"`);
                 throw new Error('Unexpect file contents');
@@ -167,7 +167,7 @@ export function parseEACHistory(input: string): EACTransaction[] {
             i = i+2;
         }
 
-        if (eacTransaction.action === EACTransactionAction.Lapse) {
+        if (eacTransaction.action === EAC.Action.Lapse) {
             if (!_.isEqual(parsed.data[i+1], LAPSE_HEADER)) {
                 console.error(`Got: "${parsed.data[i+1]}", Expected: "${LAPSE_HEADER}"`);
                 throw new Error('Unexpect file contents');
@@ -186,7 +186,7 @@ export function parseEACHistory(input: string): EACTransaction[] {
             i = i+2;
         }
 
-        history.push(eacTransaction as EACTransaction); // TODO: Remove cast
+        history.push(EAC.Transaction.check(eacTransaction));
     }
     return history;
 }

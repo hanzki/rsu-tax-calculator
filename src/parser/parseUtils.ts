@@ -19,8 +19,10 @@ export function parseDates(dateString: string): Date[] {
 
     return dates.map(parseDate);
 }
-export function parseQuantity(quantityString: string): number {
-    const quantity = Number(quantityString);
+export function parseQuantity(quantityString: string): number | undefined {
+    if (quantityString === '') return undefined;
+
+    const quantity = Number(quantityString.replace(/,/g, ''));
     if (!_.isInteger(quantity)) {
         console.error(`Unexpected quantity value: "${quantityString}"`);
         throw new Error("Invalid Quantity");
@@ -28,7 +30,9 @@ export function parseQuantity(quantityString: string): number {
     return quantity;
 }
 
-export function parseUSD(usdString: string): number {
+export function parseUSD(usdString: string): number | undefined {
+    if (usdString === '') return undefined;
+
     const usdValue = Number(usdString.replace(/[$,]/g, ''));
     if (!_.isNumber(usdValue)) {
         console.error(`Unexpected USD value: "${usdString}"`);
