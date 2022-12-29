@@ -1,8 +1,8 @@
-import { EACTransaction, IndividualTransaction } from "../calculator";
+import { EAC, Individual } from "../calculator/types";
 import { Subset } from "../util";
 
 export namespace IndividualHistoryData {
-    export function spaTransaction(overrides?: Subset<IndividualTransaction>): IndividualTransaction {
+    export function spaTransaction(overrides?: Subset<Individual.StockPlanActivityTransaction>): Individual.StockPlanActivityTransaction {
         return {
             date: new Date(2021, 7, 26),
             action: 'Stock Plan Activity',
@@ -10,10 +10,10 @@ export namespace IndividualHistoryData {
             description: 'UNITY SOFTWARE INC',
             quantity: 50,
             ...overrides,
-        } as IndividualTransaction
+        } as Individual.StockPlanActivityTransaction
     }
 
-    export function sellTransaction(overrides?: Subset<IndividualTransaction>): IndividualTransaction {
+    export function sellTransaction(overrides?: Subset<Individual.SellTransaction>): Individual.SellTransaction {
         return {
             date: new Date(2021, 7, 26),
             action: 'Sell',
@@ -24,27 +24,25 @@ export namespace IndividualHistoryData {
             feesUSD: 0.03,
             amountUSD: 4999.97,
             ...overrides,
-        } as IndividualTransaction
+        } as Individual.SellTransaction
     }
 
-    export function journalTransaction(overrides?: Subset<IndividualTransaction>): IndividualTransaction {
+    export function journalTransaction(overrides?: Subset<Individual.JournalTransaction>): Individual.JournalTransaction {
         return {
             date: new Date(2021, 7, 26),
             action: 'Journal',
-            symbol: 'U',
             description: 'Gencash transaction for SPS RS Lapse Tool',
-            quantity: 0,
             amountUSD: -4999.97,
             ...overrides,
-        } as IndividualTransaction
+        } as Individual.JournalTransaction
     }
 } 
 
 export namespace EACHistoryData {
-    export function lapseTransaction(overrides?: Subset<EACTransaction>): EACTransaction {
+    export function lapseTransaction(overrides?: Subset<EAC.LapseTransaction>): EAC.LapseTransaction {
         return {
             date: new Date(2021, 7, 25),
-            action: 'Lapse',
+            action: EAC.Action.Lapse,
             symbol: 'U',
             description: 'Restricted Stock Lapse',
             quantity: 500,
@@ -59,6 +57,6 @@ export namespace EACHistoryData {
                 totalTaxesUSD: 1820,
                 ...overrides?.lapseDetails,
             },
-        } as EACTransaction
+        } as EAC.LapseTransaction
     }
 }

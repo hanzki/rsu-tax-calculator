@@ -1,7 +1,7 @@
 import * as Papa from 'papaparse';
 import * as _ from 'lodash';
-import { IndividualTransaction } from '../calculator';
 import { firstLineAndRest, parseDates, parseQuantity, parseUSD } from './parseUtils';
+import { Individual } from '../calculator/types';
 
 const FIELD_DATE = 'Date';
 const FIELD_ACTION = 'Action';
@@ -22,7 +22,14 @@ function dropSummaryLine(input: string): string {
     }
 }
 
-export function parseIndividualHistory(input: string): IndividualTransaction[] {
+function parseAction(data: string): Individual.Action {
+    if (Object.values(Individual.Action).includes(data as Individual.Action)) {
+        return data as Individual.Action;
+    }
+    else throw new Error(`Unknown Individual transaction action: ${data}`);
+}
+
+export function parseIndividualHistory(input: string): Individual.Transaction[] {
     const [firstLine, rest] = firstLineAndRest(input);
     if (!firstLine.startsWith("\"Transactions  for account")) {
         console.error(`Got: "${firstLine}"`);
@@ -41,20 +48,20 @@ export function parseIndividualHistory(input: string): IndividualTransaction[] {
         throw new Error('Unexpect file contents');
     }
 
-    const history = [];
-    for (const line of parsed.data as any[]) {
+    const history: Individual.Transaction[] = [];
+    for (const line of parsed.data as {[key: string]: string}[]) {
         const [date, asOfDate] = parseDates(line[FIELD_DATE]);
-        history.push({
+        history.push(Individual.Transaction.check({
             date,
             asOfDate,
-            action: line[FIELD_ACTION],
+            action: parseAction(line[FIELD_ACTION]),
             symbol: line[FIELD_SYMBOL],
             description: line[FIELD_DESCRIPTION],
             quantity: parseQuantity(line[FIELD_QUANTITY]),
             priceUSD: parseUSD(line[FIELD_PRICE]),
             feesUSD: parseUSD(line[FIELD_FEES]),
             amountUSD: parseUSD(line[FIELD_AMOUNT])
-        })
+        }))
     }
     return history;
 }

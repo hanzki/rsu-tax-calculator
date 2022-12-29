@@ -1,6 +1,6 @@
 import * as Papa from 'papaparse';
 import * as _ from 'lodash';
-import { EACDepositDetails, EACLapseDetails, EACSaleDetails, EACTransaction } from '../calculator';
+import { EAC } from '../calculator/types';
 import { firstLineAndRest, parseDates, parseQuantity, parseUSD } from './parseUtils';
 
 const FIELD_EMPTY = '';
@@ -92,7 +92,14 @@ function readLine(data: string[], header: string[]): { [key in typeof header[num
     return line;
 }
 
-export function parseEACHistory(input: string): EACTransaction[] {
+function parseAction(data: string): EAC.Action {
+    if (Object.values(EAC.Action).includes(data as EAC.Action)) {
+        return data as EAC.Action;
+    }
+    else throw new Error(`Unknown EAC transaction action: ${data}`);
+}
+
+export function parseEACHistory(input: string): EAC.Transaction[] {
     const [firstLine, rest] = firstLineAndRest(input);
     if (!firstLine.startsWith("\"Transaction Details for Equity Awards Center")) {
         console.error(`Got: "${firstLine}"`);
@@ -109,12 +116,12 @@ export function parseEACHistory(input: string): EACTransaction[] {
         throw new Error('Unexpect file contents');
     }
 
-    const history: EACTransaction[] = [];
+    const history: EAC.Transaction[] = [];
     for (let i = 1; i < parsed.data.length; i++) {
         const line = readLine(parsed.data[i] as string[], FILE_HEADER);
-        const eacTransaction: EACTransaction = {
+        const eacTransaction: any = {
             date: parseDates(line[FIELD_DATE])[0],
-            action: line[FIELD_ACTION],
+            action: parseAction(line[FIELD_ACTION]),
             symbol: line[FIELD_SYMBOL],
             description: line[FIELD_DESCRIPTION],
             quantity: parseQuantity(line[FIELD_QUANTITY]),
@@ -122,13 +129,13 @@ export function parseEACHistory(input: string): EACTransaction[] {
             amountUSD: parseUSD(line[FIELD_AMOUNT])
         }
 
-        if (line[FIELD_ACTION] === 'Deposit') {
+        if (eacTransaction.action === EAC.Action.Deposit) {
             if (!_.isEqual(parsed.data[i+1], DEPOSIT_HEADER)) {
                 console.error(`Got: "${parsed.data[i+1]}", Expected: "${DEPOSIT_HEADER}"`);
                 throw new Error('Unexpect file contents');
             }
             const depositDetailsLine = readLine(parsed.data[i+2] as string[], DEPOSIT_HEADER);
-            const depositDetails: EACDepositDetails = {
+            const depositDetails = {
                 purchaseDate: parseDates(depositDetailsLine[FIELD_DEPOSIT_PURCHASE_DATE])[0],
                 purchasePriceUSD: parseUSD(depositDetailsLine[FIELD_DEPOSIT_PURCHASE_PRICE]),
                 subscriptionDate: parseDates(depositDetailsLine[FIELD_DEPOSIT_SUBSCRIPTION_DATE])[0],
@@ -139,13 +146,13 @@ export function parseEACHistory(input: string): EACTransaction[] {
             i = i+2;
         }
 
-        if (line[FIELD_ACTION] === 'Sale') {
+        if (eacTransaction.action === EAC.Action.Sale) {
             if (!_.isEqual(parsed.data[i+1], SALE_HEADER)) {
                 console.error(`Got: "${parsed.data[i+1]}", Expected: "${SALE_HEADER}"`);
                 throw new Error('Unexpect file contents');
             }
             const saleDetailsLine = readLine(parsed.data[i+2] as string[], SALE_HEADER);
-            const saleDetails: EACSaleDetails = {
+            const saleDetails = {
                 type: saleDetailsLine[FIELD_SALE_TYPE],
                 shares: parseQuantity(saleDetailsLine[FIELD_SALE_SHARES]),
                 salePriceUSD: parseUSD(saleDetailsLine[FIELD_SALE_SALE_PRICE]),
@@ -160,13 +167,13 @@ export function parseEACHistory(input: string): EACTransaction[] {
             i = i+2;
         }
 
-        if (line[FIELD_ACTION] === 'Lapse') {
+        if (eacTransaction.action === EAC.Action.Lapse) {
             if (!_.isEqual(parsed.data[i+1], LAPSE_HEADER)) {
                 console.error(`Got: "${parsed.data[i+1]}", Expected: "${LAPSE_HEADER}"`);
                 throw new Error('Unexpect file contents');
             }
             const lapseDetailsLine = readLine(parsed.data[i+2] as string[], LAPSE_HEADER);
-            const lapseDetails: EACLapseDetails = {
+            const lapseDetails = {
                 awardDate: parseDates(lapseDetailsLine[FIELD_LAPSE_AWARD_DATE])[0],
                 awardID: lapseDetailsLine[FIELD_LAPSE_AWARD_ID],
                 fmvUSD: parseUSD(lapseDetailsLine[FIELD_LAPSE_AWARD_FMV]),
@@ -179,7 +186,7 @@ export function parseEACHistory(input: string): EACTransaction[] {
             i = i+2;
         }
 
-        history.push(eacTransaction);
+        history.push(EAC.Transaction.check(eacTransaction));
     }
     return history;
 }

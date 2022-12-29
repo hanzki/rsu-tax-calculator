@@ -1,6 +1,7 @@
 import React from 'react';
 import { Container } from '@mui/system';
 import { ThemeProvider, createTheme, Typography, Divider, CircularProgress, Box } from '@mui/material';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { calculateTaxes, TaxSaleOfSecurity } from './calculator';
 import { ECBConverter } from './ecbRates';
 import { CalculationSettings, InputPanel } from './InputPanel/InputPanel';
@@ -17,6 +18,7 @@ function App() {
   const [ecbConverter, setECBConverter] = React.useState<ECBConverter>();
   const [taxReport, setTaxReport] = React.useState<TaxSaleOfSecurity[]>();
   const [calculating, setCalculating] = React.useState(false);
+  const [error, setError] = React.useState<any>();
 
   React.useEffect(() => {
     ECBConverter.loadECBData().then(converter => {
@@ -26,12 +28,19 @@ function App() {
 
   const onCalculate = (settings: CalculationSettings) => {
     setCalculating(true);
-    return new Promise<void>((resolve) => {
+    setError(undefined);
+    return new Promise<void>((resolve, reject) => {
       setTimeout(() => {
         if (!ecbConverter) {
           throw new Error('Missing ECB currency rates');
         }
-        setTaxReport(calculateTaxes(settings.individualHistory, settings.eacHistory, ecbConverter));
+        try {
+          setTaxReport(calculateTaxes(settings.individualHistory, settings.eacHistory, ecbConverter));
+        } catch (error: any) {
+          setError(error);
+          setCalculating(false);
+          reject(error);
+        }
 
         setCalculating(false);
         resolve();
@@ -44,6 +53,15 @@ function App() {
     pt: 1
   }}>
     <CircularProgress size={80}/>
+  </Box>
+
+const CalculationError = () => <Box sx={{
+    textAlign: 'center',
+    pt: 1
+  }}>
+    <ErrorOutlineIcon color='error' sx={{ fontSize: 80 }}/>
+    <Typography color='error' fontWeight={'bold'}>Calculating failed!</Typography>
+    <Typography color='error' fontSize={'small'}>{error?.message || error}</Typography>
   </Box>
 
   return (
@@ -63,6 +81,8 @@ function App() {
           <Divider variant='middle' sx={{m: 1}}/>
 
           { calculating && <CalculationProgress/> }
+
+          { error && <CalculationError/> }
 
           { taxReport && <ResultsPanel taxReport={taxReport}/> }
 
