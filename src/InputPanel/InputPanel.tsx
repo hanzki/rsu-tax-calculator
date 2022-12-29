@@ -1,10 +1,11 @@
-import { Alert, AlertTitle, Box, Typography } from "@mui/material"
+import { Box, Typography } from "@mui/material"
 import React from "react"
 import { EAC, Individual } from "../calculator/types";
 import { FileUpload, FileUploadProps } from "../FileUpload/FileUpload";
 import { parseEACHistory } from "../parser/schwabEACHistoryParser";
 import { parseIndividualHistory } from "../parser/schwabIndividualHistoryParser";
 import { CalculateButton } from "./CalculateButton";
+import { ErrorAlert } from "./InputError";
 
 export type CalculationSettings = {
     individualHistory: Individual.Transaction[],
@@ -44,14 +45,12 @@ export const InputPanel: React.FC<InputPanelProps> = ({
                 individualHistory,
                 eacHistory
             });
+            setCalculationDone(true);
         } catch (err: any) {
-            // TODO: Display error
             console.error('Error while calculating.', err);
-            throw err;
         }
 
         setCalculating(false);
-        setCalculationDone(true);
     }
 
     const individualUploadProp: FileUploadProps = {
@@ -124,13 +123,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
         flexDirection: 'column'
     }}>
         <Typography textAlign={'center'} variant={'h4'} gutterBottom>Input</Typography>
-        <Alert severity="error" sx={[
-            {display: 'none', mb: 2},
-            hasErrors && {display: 'inherit'}
-        ]}>
-            <AlertTitle>Error</AlertTitle>
-            Failed to read the file.
-        </Alert>
+        <ErrorAlert display={hasErrors} error={individualHistoryError || eacHistoryError}/>
         <Box sx={{
             display: 'flex',
             justifyContent: 'center'
