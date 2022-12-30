@@ -17,11 +17,12 @@ export interface TaxSaleOfSecurity {
     capitalLossEUR: number
 }
 
-export type StockTransaction = Individual.SellTransaction | Individual.StockPlanActivityTransaction;
+export type StockTransaction = Individual.SellTransaction | Individual.StockPlanActivityTransaction | Individual.SecurityTransferTransaction;
 
 const isStockPlanActivityTransaction = (t: Individual.Transaction): t is Individual.StockPlanActivityTransaction => t.action === Individual.Action.StockPlanActivity;
 const isSellTransaction = (t: Individual.Transaction): t is Individual.SellTransaction => t.action === Individual.Action.Sell;
-const isStockTransaction = (t: Individual.Transaction): t is StockTransaction => isSellTransaction(t) || isStockPlanActivityTransaction(t);
+const isSecurityTransferTransaction = (t: Individual.Transaction): t is Individual.SecurityTransferTransaction => t.action === Individual.Action.SecurityTransfer;
+const isStockTransaction = (t: Individual.Transaction): t is StockTransaction => isSellTransaction(t) || isStockPlanActivityTransaction(t) || isSecurityTransferTransaction(t);
 
 const isLapseTransaction = (t: EAC.Transaction): t is EAC.LapseTransaction => t.action === EAC.Action.Lapse;
 
@@ -118,8 +119,10 @@ function findLapseTransaction(spaTransaction: Individual.StockPlanActivityTransa
  * split to multiple transactions in the output.
  */
 export function calculateCostBases(stockTransactions: StockTransaction[], lots: Lot[]): TransactionWithCostBasis[] {
-    const salesTransactions = stockTransactions.filter(isSellTransaction); // TODO: support Security Transfers
-    const chronologicalTransactions = salesTransactions.sort(sortChronologicalBy(t => t.date));
+    const salesTransactions = stockTransactions.filter(isSellTransaction);
+    const outboundStockTransferTransactions = stockTransactions.filter(isSecurityTransferTransaction).filter(t => t.quantity < 0);
+    const stockForfeitingTransactions = [...salesTransactions, ...outboundStockTransferTransactions];
+    const chronologicalTransactions = stockForfeitingTransactions.sort(sortChronologicalBy(t => t.date));
 
     const chrologicalLots = [...lots].sort(sortChronologicalBy(t => t.purchaseDate));
 
@@ -131,37 +134,48 @@ export function calculateCostBases(stockTransactions: StockTransaction[], lots: 
 
     const throwMissingLotError = () => { throw new Error("Couldn't match sell to a lot"); };
 
+    // Outgoing security transfer transactions have negative quantity. We want to use
+    // the absolute value instead in order to align the logic with sell transactions
+    // which have positive quantity values.
+    const absQuantity = (t: StockTransaction) => Math.abs(t.quantity);
+
     for (const transaction of chronologicalTransactions) {
         if (!currentLot) throwMissingLotError(); // TODO: Log error?
-        if (transaction.quantity <= currentLot.quantity - sharesSoldFromCurrentLot) {
-            results.push({
-                transaction,
-                purchaseDate: currentLot.purchaseDate,
-                purchasePriceUSD: currentLot.purchasePriceUSD,
-                quantity: transaction.quantity,
-            });
-            sharesSoldFromCurrentLot += transaction.quantity;
-        } else {
-            let sharesSoldFromPreviousLot = 0;
-            if (currentLot.quantity - sharesSoldFromCurrentLot > 0) {
+        if (absQuantity(transaction) <= currentLot.quantity - sharesSoldFromCurrentLot) {
+            if (isSellTransaction(transaction)) {
                 results.push({
                     transaction,
                     purchaseDate: currentLot.purchaseDate,
                     purchasePriceUSD: currentLot.purchasePriceUSD,
-                    quantity: currentLot.quantity - sharesSoldFromCurrentLot,
+                    quantity: transaction.quantity,
                 });
+            }
+            sharesSoldFromCurrentLot += absQuantity(transaction);
+        } else {
+            let sharesSoldFromPreviousLot = 0;
+            if (currentLot.quantity - sharesSoldFromCurrentLot > 0) {
+                if (isSellTransaction(transaction)){
+                    results.push({
+                        transaction,
+                        purchaseDate: currentLot.purchaseDate,
+                        purchasePriceUSD: currentLot.purchasePriceUSD,
+                        quantity: currentLot.quantity - sharesSoldFromCurrentLot,
+                    });
+                }
                 sharesSoldFromPreviousLot = currentLot.quantity - sharesSoldFromCurrentLot;
             }
             currentLot = lotIterator.next().value;
             if(!currentLot) throwMissingLotError();
             sharesSoldFromCurrentLot = 0;
-            results.push({
-                transaction,
-                purchaseDate: currentLot.purchaseDate,
-                purchasePriceUSD: currentLot.purchasePriceUSD,
-                quantity: transaction.quantity - sharesSoldFromPreviousLot,
-            });
-            sharesSoldFromCurrentLot = transaction.quantity - sharesSoldFromPreviousLot;
+            if (isSellTransaction(transaction)) {
+                results.push({
+                    transaction,
+                    purchaseDate: currentLot.purchaseDate,
+                    purchasePriceUSD: currentLot.purchasePriceUSD,
+                    quantity: transaction.quantity - sharesSoldFromPreviousLot,
+                });
+            }
+            sharesSoldFromCurrentLot = absQuantity(transaction) - sharesSoldFromPreviousLot;
         }
     }
 

@@ -40,3 +40,8 @@ export function parseUSD(usdString: string): number | undefined {
     }
     return usdValue;
 }
+
+export function parseSymbol(symbolString: string): string | undefined {
+    if (symbolString === '') return undefined;
+    return symbolString;
+}

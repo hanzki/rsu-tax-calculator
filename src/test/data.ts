@@ -36,6 +36,17 @@ export namespace IndividualHistoryData {
             ...overrides,
         } as Individual.JournalTransaction
     }
+
+    export function securityTransferTransaction(overrides?: Subset<Individual.SecurityTransferTransaction>): Individual.SecurityTransferTransaction {
+        return {
+            date: new Date(2021, 7, 26),
+            action: Individual.Action.SecurityTransfer,
+            symbol: 'U',
+            description: 'UNITY SOFTWARE INC',
+            quantity: 50,
+            ...overrides,
+        } as Individual.SecurityTransferTransaction
+    }
 } 
 
 export namespace EACHistoryData {

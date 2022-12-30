@@ -1,6 +1,6 @@
 import * as Papa from 'papaparse';
 import * as _ from 'lodash';
-import { firstLineAndRest, parseDates, parseQuantity, parseUSD } from './parseUtils';
+import { firstLineAndRest, parseDates, parseQuantity, parseSymbol, parseUSD } from './parseUtils';
 import { Individual } from '../calculator/types';
 
 const FIELD_DATE = 'Date';
@@ -29,6 +29,19 @@ function parseAction(data: string): Individual.Action {
     else throw new Error(`Unknown Individual transaction action: ${data}`);
 }
 
+function checkForUnsupportedData(history: Individual.Transaction[]) {
+    const incomingSecurityTransfer = history.find(t => t.action === Individual.Action.SecurityTransfer && t.quantity >= 0);
+    if (incomingSecurityTransfer !== undefined) {
+        throw new Error("Unsupported data: Cannot handle correctly incoming security transfers");
+    }
+
+    const otherSharesInTheAccount = history.find((t) => "symbol" in t && t.symbol !== undefined && t.symbol !== "U");
+    if (otherSharesInTheAccount !== undefined && "symbol" in otherSharesInTheAccount) {
+        console.log(otherSharesInTheAccount);
+        throw new Error(`Unsupported data: The account contains transactions for symbol "${otherSharesInTheAccount.symbol}". Currently only supporting Unity Technologies Inc. (U) shares.`);
+    }
+}
+
 export function parseIndividualHistory(input: string): Individual.Transaction[] {
     const [firstLine, rest] = firstLineAndRest(input);
     if (!firstLine.startsWith("\"Transactions  for account")) {
@@ -55,7 +68,7 @@ export function parseIndividualHistory(input: string): Individual.Transaction[] 
             date,
             asOfDate,
             action: parseAction(line[FIELD_ACTION]),
-            symbol: line[FIELD_SYMBOL],
+            symbol: parseSymbol(line[FIELD_SYMBOL]),
             description: line[FIELD_DESCRIPTION],
             quantity: parseQuantity(line[FIELD_QUANTITY]),
             priceUSD: parseUSD(line[FIELD_PRICE]),
@@ -63,5 +76,8 @@ export function parseIndividualHistory(input: string): Individual.Transaction[] 
             amountUSD: parseUSD(line[FIELD_AMOUNT])
         }))
     }
+
+    checkForUnsupportedData(history);
+
     return history;
 }

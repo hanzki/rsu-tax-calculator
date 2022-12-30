@@ -1,7 +1,7 @@
 import * as Papa from 'papaparse';
 import * as _ from 'lodash';
 import { EAC } from '../calculator/types';
-import { firstLineAndRest, parseDates, parseQuantity, parseUSD } from './parseUtils';
+import { firstLineAndRest, parseDates, parseQuantity, parseSymbol, parseUSD } from './parseUtils';
 
 const FIELD_EMPTY = '';
 
@@ -99,6 +99,14 @@ function parseAction(data: string): EAC.Action {
     else throw new Error(`Unknown EAC transaction action: ${data}`);
 }
 
+function checkForUnsupportedData(history: EAC.Transaction[]) {
+    const otherSharesInTheAccount = history.find((t) => "symbol" in t && t.symbol !== undefined && t.symbol !== "U");
+    if (otherSharesInTheAccount !== undefined && "symbol" in otherSharesInTheAccount) {
+        console.log(otherSharesInTheAccount);
+        throw new Error(`Unsupported data: The account contains transactions for symbol "${otherSharesInTheAccount.symbol}". Currently only supporting Unity Technologies Inc. (U) shares.`);
+    }
+}
+
 export function parseEACHistory(input: string): EAC.Transaction[] {
     const [firstLine, rest] = firstLineAndRest(input);
     if (!firstLine.startsWith("\"Transaction Details for Equity Awards Center")) {
@@ -122,7 +130,7 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
         const eacTransaction: any = {
             date: parseDates(line[FIELD_DATE])[0],
             action: parseAction(line[FIELD_ACTION]),
-            symbol: line[FIELD_SYMBOL],
+            symbol: parseSymbol(line[FIELD_SYMBOL]),
             description: line[FIELD_DESCRIPTION],
             quantity: parseQuantity(line[FIELD_QUANTITY]),
             feesUSD: parseUSD(line[FIELD_FEES]),
@@ -188,5 +196,8 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
 
         history.push(EAC.Transaction.check(eacTransaction));
     }
+
+    checkForUnsupportedData(history);
+
     return history;
 }

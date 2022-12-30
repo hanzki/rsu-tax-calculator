@@ -178,6 +178,35 @@ describe('calculator', () => {
                 ])
             })
         })
+
+        describe('when some shares were transferred from the account without selling', () => {
+            let stockTransactions: Calculator.StockTransaction[];
+            let lots: Calculator.Lot[];
+            let result: Calculator.TransactionWithCostBasis[];
+            beforeEach(() => {
+                stockTransactions = [
+                    IndividualHistoryData.sellTransaction({date: new Date(2021, 9, 30), quantity: 80, priceUSD: 56}),
+                    IndividualHistoryData.securityTransferTransaction({date: new Date(2021, 8, 25), quantity: -50}),
+                ];
+
+                lots = [
+                    { symbol: 'U', quantity: 100, purchaseDate: new Date(2021, 8, 20), purchasePriceUSD: 42 },
+                    { symbol: 'U', quantity: 50, purchaseDate: new Date(2021, 7, 30), purchasePriceUSD: 69 }
+                ]
+
+                result = Calculator.calculateCostBases(stockTransactions, lots);
+            });
+
+            it('transferred shares are skipped when calculating cost basis for sales', () => {
+                expect(result).toHaveLength(1);
+                expect(result[0]).toMatchObject({
+                    transaction: stockTransactions[0],
+                    purchaseDate: lots[0].purchaseDate,
+                    purchasePriceUSD: lots[0].purchasePriceUSD,
+                    quantity: stockTransactions[0].quantity
+                })
+            });
+        });
     });
 
     describe('createTaxReport', () => {
