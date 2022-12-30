@@ -1,6 +1,6 @@
 import React from 'react';
 import { Container } from '@mui/system';
-import { ThemeProvider, createTheme, Typography, Divider, CircularProgress, Box } from '@mui/material';
+import { ThemeProvider, createTheme, Typography, Divider, CircularProgress, Box, Link } from '@mui/material';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { calculateTaxes, TaxSaleOfSecurity } from './calculator';
 import { ECBConverter } from './ecbRates';
@@ -13,6 +13,8 @@ const theme = createTheme();
 
 // Arbitary delay to make the calculations feel more significant
 const CALCULATION_DELAY = 1500;
+
+const CHANGELOG_URL = 'https://github.com/hanzki/rsu-tax-calculator/blob/master/CHANGELOG.md';
 
 function App() {
   const [ecbConverter, setECBConverter] = React.useState<ECBConverter>();
@@ -55,7 +57,7 @@ function App() {
     <CircularProgress size={80}/>
   </Box>
 
-const CalculationError = () => <Box sx={{
+  const CalculationError = () => <Box sx={{
     textAlign: 'center',
     pt: 1
   }}>
@@ -64,12 +66,20 @@ const CalculationError = () => <Box sx={{
     <Typography color='error' fontSize={'small'}>{error?.message || error}</Typography>
   </Box>
 
+  const VersionLink = () => <Link 
+    href={CHANGELOG_URL}
+    variant={'subtitle1'}
+    color='text.secondary'
+    underline='hover'
+    sx={{whiteSpace: 'nowrap'}}
+  >v{process.env.REACT_APP_VERSION}</Link>
+
   return (
     <ThemeProvider theme={theme}>
       <div className="App" style={{background: '#AED6F1'}}>
         <Container maxWidth="lg" sx={{bgcolor: 'background.default', minHeight: '100vh'}}>
-          <Typography textAlign={'center'} variant={'h2'} gutterBottom>RSU Tax Calculator
-            <Typography component='span' sx={{color: 'text.secondary', whiteSpace: 'nowrap'}}>v{process.env.REACT_APP_VERSION}</Typography>
+          <Typography textAlign={'center'} variant={'h2'} gutterBottom>
+            RSU Tax Calculator&nbsp;<VersionLink/>
           </Typography>
 
           <InstructionsPanel/>

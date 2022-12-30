@@ -76,13 +76,13 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
         }}>
             <InsightCard title="Shares Sold" valueStr={sharesSold.toString()}/>
             <Spacer/>
-            <InsightCard title="Total Income" valueEUR={totalIncome}/>
+            <InsightCard title="Selling prices" valueEUR={totalIncome}/>
             <Spacer/>
-            <InsightCard title="Total Cost" valueEUR={totalCost}/>
+            <InsightCard title="Acquisition expenses" valueEUR={totalCost}/>
             <Spacer/>
-            <InsightCard title="Capital Gain" valueEUR={capitalGain}/>
+            <InsightCard title="Capital gains" valueEUR={capitalGain}/>
             <Spacer/>
-            <InsightCard title="Capital Loss" valueEUR={capitalLoss}/>
+            <InsightCard title="Capital losses" valueEUR={capitalLoss}/>
         </Box>
         <SaleOfSecuritiesTable transactions={salesWithinPeriod} onDownload={downloadReport}/>
     </Box>

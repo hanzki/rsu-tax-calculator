@@ -1,8 +1,12 @@
 # Change Log
 
+## v0.6.1-beta
+* Aligned some of the terminology with OmaVero.
+* Made the version number a link to the changelog.
+
 ## v0.6.0-beta
-* Added support for Security Transfer transactions
-* Added extra validation for unsupported data
+* Added support for Security Transfer transactions.
+* Added extra validation for unsupported data.
 
 ## v0.5.0-beta
 * Improved displaying of errors in case of parsing or calucation errors.
