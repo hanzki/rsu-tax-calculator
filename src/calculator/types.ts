@@ -102,6 +102,7 @@ export namespace EAC {
         ExerciseAndSell = 'Exercise and Sell',
         Lapse = 'Lapse',
         Sale = 'Sale',
+        SellToCover = 'Sell to Cover',
         WireTransfer = 'Wire Transfer',
     }
 
@@ -132,7 +133,7 @@ export namespace EAC {
         awardDate: InstanceOf(Date),
     });
 
-    const ExerciseAndSellDetails = Record({
+    const OptionsDetails = Record({
         exerciseCostUSD: Number,
         grossProceedsUSD: Number,
         netProceedsUSD: Number,
@@ -147,7 +148,7 @@ export namespace EAC {
         feesUSD: Number,
         amountUSD: Number,
         rows: Array(ExerciseAndSellRow),
-        details: ExerciseAndSellDetails
+        details: OptionsDetails
     });
     export type ExerciseAndSellTransaction = Static<typeof ExerciseAndSellTransaction>;
 
@@ -195,6 +196,43 @@ export namespace EAC {
     });
     export type SaleTransaction = Static<typeof SaleTransaction>;
 
+    export enum SellToCoverAction {
+        Sell = 'STC Sell',
+        Hold = 'STC Hold',
+    }
+
+    const SellToCoverSellRow = Record({
+        action: Literal(SellToCoverAction.Sell),
+        awardId: String,
+        sharesExercised: Number,
+        awardPriceUSD: Number,
+        salePriceUSD: Number,
+        awardType: String,
+        awardDate: InstanceOf(Date),
+    });
+
+    const SellToCoverHoldRow = Record({
+        action: Literal(SellToCoverAction.Hold),
+        awardId: String,
+        sharesExercised: Number,
+        awardPriceUSD: Number,
+        awardType: String,
+        awardDate: InstanceOf(Date),
+    });
+
+    const SellToCoverTransaction = Record({
+        action: Literal(Action.SellToCover),
+        date: InstanceOf(Date),
+        symbol: String,
+        description: String,
+        quantity: Number,
+        feesUSD: Number,
+        amountUSD: Number,
+        rows: Array(Union(SellToCoverSellRow, SellToCoverHoldRow)),
+        details: OptionsDetails
+    });
+    export type SellToCoverTransaction = Static<typeof SellToCoverTransaction>;
+
     const WireTransferTransaction = Record({
         action: Literal(Action.WireTransfer),
         date: InstanceOf(Date),
@@ -210,6 +248,7 @@ export namespace EAC {
         ExerciseAndSellTransaction,
         LapseTransaction,
         SaleTransaction,
+        SellToCoverTransaction,
         WireTransferTransaction,
     );
     export type Transaction = Static<typeof Transaction>;
