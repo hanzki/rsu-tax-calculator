@@ -1,4 +1,4 @@
-import { Number, String, Literal, Record, Union, InstanceOf, Static } from 'runtypes';
+import { Number, String, Literal, Record, Union, InstanceOf, Static, Array } from 'runtypes';
 
 export namespace Individual {
     export enum Action {
@@ -99,6 +99,7 @@ export namespace Individual {
 export namespace EAC {
     export enum Action {
         Deposit = 'Deposit',
+        ExerciseAndSell = 'Exercise and Sell',
         Lapse = 'Lapse',
         Sale = 'Sale',
         WireTransfer = 'Wire Transfer',
@@ -120,8 +121,35 @@ export namespace EAC {
         quantity: Number,
         depositDetails: DepositDetails
     });
-
     export type DepositTransaction = Static<typeof DepositTransaction>;
+
+    const ExerciseAndSellRow = Record({
+        awardId: String,
+        sharesExercised: Number,
+        awardPriceUSD: Number,
+        salePriceUSD: Number,
+        awardType: String,
+        awardDate: InstanceOf(Date),
+    });
+
+    const ExerciseAndSellDetails = Record({
+        exerciseCostUSD: Number,
+        grossProceedsUSD: Number,
+        netProceedsUSD: Number,
+    });
+
+    const ExerciseAndSellTransaction = Record({
+        action: Literal(Action.ExerciseAndSell),
+        date: InstanceOf(Date),
+        symbol: String,
+        description: String,
+        quantity: Number,
+        feesUSD: Number,
+        amountUSD: Number,
+        rows: Array(ExerciseAndSellRow),
+        details: ExerciseAndSellDetails
+    });
+    export type ExerciseAndSellTransaction = Static<typeof ExerciseAndSellTransaction>;
 
     const LapseDetails = Record({
         awardDate: InstanceOf(Date),
@@ -141,7 +169,6 @@ export namespace EAC {
         quantity: Number,
         lapseDetails:LapseDetails
     });
-
     export type LapseTransaction = Static<typeof LapseTransaction>;
 
     const SaleDetails = Record({
@@ -166,7 +193,6 @@ export namespace EAC {
         amountUSD: Number,
         saleDetails: SaleDetails,
     });
-
     export type SaleTransaction = Static<typeof SaleTransaction>;
 
     const WireTransferTransaction = Record({
@@ -177,9 +203,14 @@ export namespace EAC {
         feesUSD: Number,
         amountUSD: Number,
     });
-
     export type WireTransferTransaction = Static<typeof WireTransferTransaction>;
 
-    export const Transaction = Union(DepositTransaction, LapseTransaction, SaleTransaction, WireTransferTransaction);
+    export const Transaction = Union(
+        DepositTransaction,
+        ExerciseAndSellTransaction,
+        LapseTransaction,
+        SaleTransaction,
+        WireTransferTransaction,
+    );
     export type Transaction = Static<typeof Transaction>;
 }
