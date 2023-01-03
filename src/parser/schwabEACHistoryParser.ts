@@ -256,7 +256,7 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
             while (_.isEqual(parsed.data[i+1], EXERCISE_AND_SELL_ROW_HEADER)) {
                 const exerciseAndSellRowLine = readLine(parsed.data[i+2], EXERCISE_AND_SELL_ROW_HEADER);
                 const exerciseAndSellRow = {
-                    awardId: exerciseAndSellRowLine[FIELD_EXERCISE_AND_SELL_AWARD_ID],
+                    awardID: exerciseAndSellRowLine[FIELD_EXERCISE_AND_SELL_AWARD_ID],
                     sharesExercised: parseQuantity(exerciseAndSellRowLine[FIELD_EXERCISE_AND_SELL_SHARES_EXERCISED]),
                     awardPriceUSD: parseUSD(exerciseAndSellRowLine[FIELD_EXERCISE_AND_SELL_AWARD_PRICE]),
                     salePriceUSD: parseUSD(exerciseAndSellRowLine[FIELD_EXERCISE_AND_SELL_SALE_PRICE]),
@@ -291,7 +291,7 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
             while (_.isEqual(parsed.data[i+1], SELL_TO_COVER_ROW_HEADER)) {
                 const sellToCoverRowLine = readLine(parsed.data[i+2], SELL_TO_COVER_ROW_HEADER);
                 const sellToCoverRow = {
-                    awardId: sellToCoverRowLine[FIELD_SELL_TO_COVER_AWARD_ID],
+                    awardID: sellToCoverRowLine[FIELD_SELL_TO_COVER_AWARD_ID],
                     action: sellToCoverRowLine[FIELD_SELL_TO_COVER_ACTION],
                     sharesExercised: parseQuantity(sellToCoverRowLine[FIELD_SELL_TO_COVER_SHARES_EXERCISED]),
                     awardPriceUSD: parseUSD(sellToCoverRowLine[FIELD_SELL_TO_COVER_AWARD_PRICE]),

@@ -70,4 +70,40 @@ export namespace EACHistoryData {
             },
         } as EAC.LapseTransaction
     }
+
+    export function exerciseAndSellTransaction(overrides?: Subset<EAC.ExerciseAndSellTransaction>): EAC.ExerciseAndSellTransaction {
+        return {
+            date: new Date(2021, 7, 25),
+            action: EAC.Action.ExerciseAndSell,
+            symbol: 'U',
+            description: 'Option Exercise',
+            quantity: 500,
+            feesUSD: 1,
+            amountUSD: 3499,
+            rows: [
+                {
+                    awardID: 'XXXXX',
+                    sharesExercised: 250,
+                    awardPriceUSD: 2.5,
+                    salePriceUSD: 9.5,
+                    awardType: 'XX',
+                    awardDate: new Date(2015, 9, 1)
+                },
+                {
+                    awardID: 'XXXXX',
+                    sharesExercised: 250,
+                    awardPriceUSD: 2.5,
+                    salePriceUSD: 9.5,
+                    awardType: 'XX',
+                    awardDate: new Date(2015, 9, 1)
+                },
+            ],
+            ...overrides,
+            details: {
+                exerciseCostUSD: 1250,
+                grossProceedsUSD: 4750,
+                netProceedsUSD: 3499,
+            }
+        } as EAC.ExerciseAndSellTransaction
+    }
 }

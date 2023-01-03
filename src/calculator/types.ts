@@ -125,7 +125,7 @@ export namespace EAC {
     export type DepositTransaction = Static<typeof DepositTransaction>;
 
     const ExerciseAndSellRow = Record({
-        awardId: String,
+        awardID: String,
         sharesExercised: Number,
         awardPriceUSD: Number,
         salePriceUSD: Number,
@@ -203,7 +203,7 @@ export namespace EAC {
 
     const SellToCoverSellRow = Record({
         action: Literal(SellToCoverAction.Sell),
-        awardId: String,
+        awardID: String,
         sharesExercised: Number,
         awardPriceUSD: Number,
         salePriceUSD: Number,
@@ -213,7 +213,7 @@ export namespace EAC {
 
     const SellToCoverHoldRow = Record({
         action: Literal(SellToCoverAction.Hold),
-        awardId: String,
+        awardID: String,
         sharesExercised: Number,
         awardPriceUSD: Number,
         awardType: String,

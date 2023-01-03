@@ -1,4 +1,5 @@
 import { isBefore, isEqual } from "date-fns";
+import _ from "lodash";
 import { ECBConverter } from "../ecbRates";
 import { sortChronologicalBy, sortReverseChronologicalBy } from "../util";
 import { EAC, Individual } from "./types";
@@ -25,6 +26,7 @@ const isSecurityTransferTransaction = (t: Individual.Transaction): t is Individu
 const isStockTransaction = (t: Individual.Transaction): t is StockTransaction => isSellTransaction(t) || isStockPlanActivityTransaction(t) || isSecurityTransferTransaction(t);
 
 const isLapseTransaction = (t: EAC.Transaction): t is EAC.LapseTransaction => t.action === EAC.Action.Lapse;
+const isExerciseAndSellTransaction = (t: EAC.Transaction): t is EAC.ExerciseAndSellTransaction => t.action === EAC.Action.ExerciseAndSell;
 
 /**
  * Filters out all transactions which are not related to moving of stocks
@@ -34,6 +36,35 @@ const isLapseTransaction = (t: EAC.Transaction): t is EAC.LapseTransaction => t.
  */
 export function filterStockTransactions(individualHistory: Individual.Transaction[]): StockTransaction[] {
     return individualHistory.filter(isStockTransaction);
+}
+
+
+/**
+ * Filters out receiving and selling of shares related to selling options. These transactions
+ * do not follow FIFO order and do not need to be considered when calculating capital income.
+ * 
+ * @param stockTransactions list of stock transactions from individual history
+ * @param eacHistory full Equity Awards Center history
+ * @returns a list of stock transactions without transactions related to selling of options
+ */
+export function filterOutOptionSales(stockTransactions: StockTransaction[], eacHistory: EAC.Transaction[]): StockTransaction[] {
+    const exerciseAndSellTransactions = eacHistory.filter(isExerciseAndSellTransaction);
+    const filteredTransactions = [...stockTransactions];
+
+    for (const easTransaction of exerciseAndSellTransactions) {
+        for (const row of easTransaction.rows) {
+            const transactionsForTheDate = filteredTransactions.filter(t => isEqual(t.date, easTransaction.date));
+
+            const spaTransaction = transactionsForTheDate.filter(isStockPlanActivityTransaction).find(t => t.quantity === row.sharesExercised);
+            if (spaTransaction === undefined) throw new Error(`Couldn't find matching Stock Plan Activity transaction for options exercised and sold on ${easTransaction.date}`);
+            const sellTransaction = transactionsForTheDate.filter(isSellTransaction).find(t => t.quantity === row.sharesExercised && t.priceUSD === row.salePriceUSD);
+            if (sellTransaction === undefined) throw new Error(`Couldn't find matching Sell transaction for options exercised and sold on ${easTransaction.date}`);
+            
+            _.remove(filteredTransactions, t => t === spaTransaction);
+            _.remove(filteredTransactions, t => t === sellTransaction);
+        }
+    }
+    return filteredTransactions;
 }
 
 export type TransactionWithCostBasis = {
@@ -234,11 +265,13 @@ export function calculateTaxes(
         // Filter out non-stock transactions
         const stockTransactions = filterStockTransactions(individualHistory);
 
+        const transactionsWithoutOptionSales = filterOutOptionSales(stockTransactions, eacHistory);
+
         // Build list of lots
-        const lots = buildLots(stockTransactions, eacHistory);
+        const lots = buildLots(transactionsWithoutOptionSales, eacHistory);
 
         // Calculate correct cost basis
-        const transactionsWithCostBasis = calculateCostBases(stockTransactions, lots);
+        const transactionsWithCostBasis = calculateCostBases(transactionsWithoutOptionSales, lots);
 
         // Create tax report
         const taxReport = createTaxReport(transactionsWithCostBasis, ecbConverter);
