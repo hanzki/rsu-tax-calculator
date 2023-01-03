@@ -52,19 +52,78 @@ export function filterOutOptionSales(stockTransactions: StockTransaction[], eacH
     const filteredTransactions = [...stockTransactions];
 
     for (const easTransaction of exerciseAndSellTransactions) {
-        for (const row of easTransaction.rows) {
-            const transactionsForTheDate = filteredTransactions.filter(t => isEqual(t.date, easTransaction.date));
+        // Find gain&sell pairs for the same day
+        const gainAndSellPairs = gainAndSellPairsForADay(filteredTransactions, easTransaction.date);
+        const matchingPairs = pairsMatchingToExerciseAndSell(gainAndSellPairs, easTransaction);
+        const flatMatchingPairs: StockTransaction[] = _.flatten(matchingPairs);
 
-            const spaTransaction = transactionsForTheDate.filter(isStockPlanActivityTransaction).find(t => t.quantity === row.sharesExercised);
-            if (spaTransaction === undefined) throw new Error(`Couldn't find matching Stock Plan Activity transaction for options exercised and sold on ${easTransaction.date}`);
-            const sellTransaction = transactionsForTheDate.filter(isSellTransaction).find(t => t.quantity === row.sharesExercised && t.priceUSD === row.salePriceUSD);
-            if (sellTransaction === undefined) throw new Error(`Couldn't find matching Sell transaction for options exercised and sold on ${easTransaction.date}`);
-            
-            _.remove(filteredTransactions, t => t === spaTransaction);
-            _.remove(filteredTransactions, t => t === sellTransaction);
-        }
+        _.remove(filteredTransactions, t => flatMatchingPairs.includes(t));
     }
     return filteredTransactions;
+}
+
+type GainAndSell = [Individual.StockPlanActivityTransaction, Individual.SellTransaction];
+
+function gainAndSellPairsForADay(stockTransactions: StockTransaction[], date: Date): GainAndSell[] {
+    const gainAndSellPairs: GainAndSell[] = [];
+    const transactionsForTheDay = stockTransactions.filter(t => isEqual(t.date, date));
+    const gainTransactions = transactionsForTheDay.filter(isStockPlanActivityTransaction);
+    const sellTransactions = transactionsForTheDay.filter(isSellTransaction);
+
+    for (const gainTransaction of gainTransactions) {
+        const matchingSell = sellTransactions.find(t => gainTransaction.quantity === t.quantity);
+        if (matchingSell !== undefined) {
+            _.remove(sellTransactions, t => t === matchingSell);
+            gainAndSellPairs.push([gainTransaction, matchingSell]);
+        }
+    }
+
+    return gainAndSellPairs;
+}
+
+function pairsMatchingToExerciseAndSell(gainAndSellPairs: GainAndSell[], exerciseAndSell: EAC.ExerciseAndSellTransaction): GainAndSell[] {
+    const unmatchedEASRows = [...exerciseAndSell.rows];
+    const easPrices = _.uniq(exerciseAndSell.rows.map(r => r.salePriceUSD));
+
+    const isValidMatching = (pairs: GainAndSell[], rows: typeof exerciseAndSell.rows): boolean => {
+        // Total number of shares should match
+        if (_.sumBy(pairs, ([g,]) => g.quantity) !== _.sumBy(rows, r => r.sharesExercised)) {
+            return false;
+        }
+
+        // Each row should match to a single pair, however one pair might have multiple rows
+        if (pairs.length > rows.length) {
+            return false;
+        }
+
+        // TODO: This logic is probably not completely exhaustive
+        return true;
+    }
+
+    const matchedPairs: GainAndSell[] = [];
+
+    for (const price of easPrices) {
+        const easRows = unmatchedEASRows.filter(r => r.salePriceUSD === price);
+        const pairs = gainAndSellPairs.filter(([,sell]) => sell.priceUSD === price);
+
+        const candidates: GainAndSell[][] = [[]];
+        for (const pair of pairs) {
+            const previousCandidates = [...candidates];
+            for (const candidate of previousCandidates) {
+                candidates.push([...candidate, pair]);
+            }
+        }
+        console.log({pairs, candidates});
+
+        const validMatch = candidates.find(candidate => isValidMatching(candidate, easRows));
+        if (validMatch === undefined) {
+            throw new Error(`Couldn't find a matching for Exercise and Sell ${exerciseAndSell.date} for salePrice ${price}`);
+        }
+        console.log('Found matching pairs', validMatch, easRows);
+        matchedPairs.push(...validMatch);
+    }
+
+    return matchedPairs;
 }
 
 export type TransactionWithCostBasis = {
