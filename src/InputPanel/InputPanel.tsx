@@ -5,7 +5,8 @@ import { FileUpload, FileUploadProps } from "../FileUpload/FileUpload";
 import { parseEACHistory } from "../parser/schwabEACHistoryParser";
 import { parseIndividualHistory } from "../parser/schwabIndividualHistoryParser";
 import { CalculateButton } from "./CalculateButton";
-import { ErrorAlert } from "./InputError";
+import { ErrorAlert } from "./ErrorAlert";
+import { WarningAlert } from "./WarningAlert";
 
 export type CalculationSettings = {
     individualHistory: Individual.Transaction[],
@@ -28,6 +29,20 @@ export const InputPanel: React.FC<InputPanelProps> = ({
 
     const readyToCalculate = individualHistory && eacHistory;
     const hasErrors = !!individualHistoryError || !!eacHistoryError;
+
+    const warnings = [];
+    if (eacHistory && eacHistory.some(t => t.action === EAC.Action.SellToCover)) {
+        warnings.push('The purchase price for shares held from a Sell To Cover transaction might not be correctly calculated.')
+    }
+    if (individualHistory && individualHistory.some(t => t.action === Individual.Action.CancelSell)) {
+        warnings.push('The Cancel Sell transaction is currently ignored.')
+    }
+    if (eacHistory && eacHistory.some(t => t.action === EAC.Action.Sale)) {
+        warnings.push('The sale of ESPP shares is currently ignored.')
+    }
+    if (individualHistory && individualHistory.some(t => t.action === Individual.Action.Sell)) {
+        warnings.push('The sales fee when selling shares might get double counted.')
+    }
 
     const doCalculate = async () => {
         if(!individualHistory) {
@@ -64,8 +79,6 @@ export const InputPanel: React.FC<InputPanelProps> = ({
                 event.target.files !== null &&
                 event.target?.files?.length > 0
             ) {
-                console.debug(`Saving ${event.target.value}`)
-                
                 const reader = new FileReader();
                 reader.onload = (event) => {
                   if(typeof event.target?.result === 'string') {
@@ -96,8 +109,6 @@ export const InputPanel: React.FC<InputPanelProps> = ({
                 event.target.files !== null &&
                 event.target?.files?.length > 0
             ) {
-                console.debug(`Saving ${event.target.value}`)
-                
                 const reader = new FileReader();
                 reader.onload = (event) => {
                   if(typeof event.target?.result === 'string') {
@@ -124,6 +135,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
     }}>
         <Typography textAlign={'center'} variant={'h4'} gutterBottom>Input</Typography>
         <ErrorAlert display={hasErrors} error={individualHistoryError || eacHistoryError}/>
+        <WarningAlert display={warnings.length > 0} warnings={warnings}/>
         <Box sx={{
             display: 'flex',
             justifyContent: 'center'

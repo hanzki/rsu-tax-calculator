@@ -1,7 +1,8 @@
-import { Number, String, Literal, Record, Union, InstanceOf, Static } from 'runtypes';
+import { Number, String, Literal, Record, Union, InstanceOf, Static, Array } from 'runtypes';
 
 export namespace Individual {
     export enum Action {
+        CancelSell = 'Cancel Sell',
         CreditInterest = 'Credit Interest',
         Journal = 'Journal',
         MiscCashEntry = 'Misc Cash Entry',
@@ -11,6 +12,19 @@ export namespace Individual {
         StockPlanActivity = 'Stock Plan Activity',
         WireSent = 'Wire Sent',
     };
+
+    const CancelSellTransaction = Record({
+        action: Literal(Action.CancelSell),
+        date: InstanceOf(Date),
+        asOfDate: InstanceOf(Date).optional(),
+        symbol: String,
+        description: String,
+        quantity: Number,
+        priceUSD: Number,
+        feesUSD: Number.optional(),
+        amountUSD: Number,
+    });
+    export type CancelSellTransaction = Static<typeof CancelSellTransaction>;
 
     const CreditInterestTransaction = Record({
         action: Literal(Action.CreditInterest),
@@ -48,6 +62,7 @@ export namespace Individual {
     const SellTransaction = Record({
         action: Literal(Action.Sell),
         date: InstanceOf(Date),
+        asOfDate: InstanceOf(Date).optional(),
         symbol: String,
         description: String,
         quantity: Number,
@@ -84,6 +99,7 @@ export namespace Individual {
     export type WireSentTransaction = Static<typeof WireSentTransaction>;
 
     export const Transaction = Union(
+        CancelSellTransaction,
         CreditInterestTransaction,
         JournalTransaction,
         MiscCashEntryTransaction,
@@ -99,8 +115,10 @@ export namespace Individual {
 export namespace EAC {
     export enum Action {
         Deposit = 'Deposit',
+        ExerciseAndSell = 'Exercise and Sell',
         Lapse = 'Lapse',
         Sale = 'Sale',
+        SellToCover = 'Sell to Cover',
         WireTransfer = 'Wire Transfer',
     }
 
@@ -120,8 +138,35 @@ export namespace EAC {
         quantity: Number,
         depositDetails: DepositDetails
     });
-
     export type DepositTransaction = Static<typeof DepositTransaction>;
+
+    const ExerciseAndSellRow = Record({
+        awardID: String,
+        sharesExercised: Number,
+        awardPriceUSD: Number,
+        salePriceUSD: Number,
+        awardType: String,
+        awardDate: InstanceOf(Date),
+    });
+
+    const OptionsDetails = Record({
+        exerciseCostUSD: Number,
+        grossProceedsUSD: Number,
+        netProceedsUSD: Number,
+    });
+
+    const ExerciseAndSellTransaction = Record({
+        action: Literal(Action.ExerciseAndSell),
+        date: InstanceOf(Date),
+        symbol: String,
+        description: String,
+        quantity: Number,
+        feesUSD: Number,
+        amountUSD: Number,
+        rows: Array(ExerciseAndSellRow),
+        details: OptionsDetails
+    });
+    export type ExerciseAndSellTransaction = Static<typeof ExerciseAndSellTransaction>;
 
     const LapseDetails = Record({
         awardDate: InstanceOf(Date),
@@ -141,7 +186,6 @@ export namespace EAC {
         quantity: Number,
         lapseDetails:LapseDetails
     });
-
     export type LapseTransaction = Static<typeof LapseTransaction>;
 
     const SaleDetails = Record({
@@ -166,8 +210,46 @@ export namespace EAC {
         amountUSD: Number,
         saleDetails: SaleDetails,
     });
-
     export type SaleTransaction = Static<typeof SaleTransaction>;
+
+    export enum SellToCoverAction {
+        Sell = 'STC Sell',
+        Hold = 'STC Hold',
+    }
+
+    const SellToCoverSellRow = Record({
+        action: Literal(SellToCoverAction.Sell),
+        awardID: String,
+        sharesExercised: Number,
+        awardPriceUSD: Number,
+        salePriceUSD: Number,
+        awardType: String,
+        awardDate: InstanceOf(Date),
+    });
+    export type SellToCoverSellRow = Static<typeof SellToCoverSellRow>;
+
+    const SellToCoverHoldRow = Record({
+        action: Literal(SellToCoverAction.Hold),
+        awardID: String,
+        sharesExercised: Number,
+        awardPriceUSD: Number,
+        awardType: String,
+        awardDate: InstanceOf(Date),
+    });
+    export type SellToCoverHoldRow = Static<typeof SellToCoverHoldRow>;
+
+    const SellToCoverTransaction = Record({
+        action: Literal(Action.SellToCover),
+        date: InstanceOf(Date),
+        symbol: String,
+        description: String,
+        quantity: Number,
+        feesUSD: Number,
+        amountUSD: Number,
+        rows: Array(Union(SellToCoverSellRow, SellToCoverHoldRow)),
+        details: OptionsDetails
+    });
+    export type SellToCoverTransaction = Static<typeof SellToCoverTransaction>;
 
     const WireTransferTransaction = Record({
         action: Literal(Action.WireTransfer),
@@ -177,9 +259,15 @@ export namespace EAC {
         feesUSD: Number,
         amountUSD: Number,
     });
-
     export type WireTransferTransaction = Static<typeof WireTransferTransaction>;
 
-    export const Transaction = Union(DepositTransaction, LapseTransaction, SaleTransaction, WireTransferTransaction);
+    export const Transaction = Union(
+        DepositTransaction,
+        ExerciseAndSellTransaction,
+        LapseTransaction,
+        SaleTransaction,
+        SellToCoverTransaction,
+        WireTransferTransaction,
+    );
     export type Transaction = Static<typeof Transaction>;
 }

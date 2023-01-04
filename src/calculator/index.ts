@@ -1,6 +1,7 @@
 import { isBefore, isEqual } from "date-fns";
+import _ from "lodash";
 import { ECBConverter } from "../ecbRates";
-import { sortChronologicalBy, sortReverseChronologicalBy } from "../util";
+import { isWithinAWeek, sortChronologicalBy, sortReverseChronologicalBy } from "../util";
 import { EAC, Individual } from "./types";
 
 export interface TaxSaleOfSecurity {
@@ -24,7 +25,15 @@ const isSellTransaction = (t: Individual.Transaction): t is Individual.SellTrans
 const isSecurityTransferTransaction = (t: Individual.Transaction): t is Individual.SecurityTransferTransaction => t.action === Individual.Action.SecurityTransfer;
 const isStockTransaction = (t: Individual.Transaction): t is StockTransaction => isSellTransaction(t) || isStockPlanActivityTransaction(t) || isSecurityTransferTransaction(t);
 
+type OptionSaleTransaction = EAC.ExerciseAndSellTransaction | EAC.SellToCoverTransaction;
+
 const isLapseTransaction = (t: EAC.Transaction): t is EAC.LapseTransaction => t.action === EAC.Action.Lapse;
+const isExerciseAndSellTransaction = (t: EAC.Transaction): t is EAC.ExerciseAndSellTransaction => t.action === EAC.Action.ExerciseAndSell;
+const isSellToCoverTransaction = (t: EAC.Transaction): t is EAC.SellToCoverTransaction => t.action === EAC.Action.SellToCover;
+const isOptionSaleTransaction = (t: EAC.Transaction): t is OptionSaleTransaction => isExerciseAndSellTransaction(t) || isSellToCoverTransaction(t);
+
+const isSellToCoverSellRow = (r: EAC.SellToCoverTransaction['rows'][number]): r is EAC.SellToCoverSellRow => r.action === EAC.SellToCoverAction.Sell;
+const isSellToCoverHoldRow = (r: EAC.SellToCoverTransaction['rows'][number]): r is EAC.SellToCoverHoldRow => r.action === EAC.SellToCoverAction.Hold;
 
 /**
  * Filters out all transactions which are not related to moving of stocks
@@ -34,6 +43,96 @@ const isLapseTransaction = (t: EAC.Transaction): t is EAC.LapseTransaction => t.
  */
 export function filterStockTransactions(individualHistory: Individual.Transaction[]): StockTransaction[] {
     return individualHistory.filter(isStockTransaction);
+}
+
+
+/**
+ * Filters out receiving and selling of shares related to selling options. These transactions
+ * do not follow FIFO order and do not need to be considered when calculating capital income.
+ * 
+ * @param stockTransactions list of stock transactions from individual history
+ * @param eacHistory full Equity Awards Center history
+ * @returns a list of stock transactions without transactions related to selling of options
+ */
+export function filterOutOptionSales(stockTransactions: StockTransaction[], eacHistory: EAC.Transaction[]): StockTransaction[] {
+    const optionSaleTransactions = eacHistory.filter(isOptionSaleTransaction);
+    const filteredTransactions = [...stockTransactions];
+
+    for (const optionSaleTransaction of optionSaleTransactions) {
+        // Find gain&sell pairs for the same day
+        const gainAndSellPairs = gainAndSellPairsForADay(filteredTransactions, optionSaleTransaction.date);
+        const matchingPairs = pairsMatchingToOptionSale(gainAndSellPairs, optionSaleTransaction);
+        const flatMatchingPairs: StockTransaction[] = _.flatten(matchingPairs);
+
+        _.remove(filteredTransactions, t => flatMatchingPairs.includes(t));
+    }
+    return filteredTransactions;
+}
+
+type GainAndSell = [Individual.StockPlanActivityTransaction, Individual.SellTransaction];
+
+function gainAndSellPairsForADay(stockTransactions: StockTransaction[], date: Date): GainAndSell[] {
+    const gainAndSellPairs: GainAndSell[] = [];
+    const transactionsForTheDay = stockTransactions.filter(t => isEqual(t.date, date));
+    const gainTransactions = transactionsForTheDay.filter(isStockPlanActivityTransaction);
+    const sellTransactions = transactionsForTheDay.filter(isSellTransaction);
+
+    for (const gainTransaction of gainTransactions) {
+        const matchingSell = sellTransactions.find(t => gainTransaction.quantity === t.quantity);
+        if (matchingSell !== undefined) {
+            _.remove(sellTransactions, t => t === matchingSell);
+            gainAndSellPairs.push([gainTransaction, matchingSell]);
+        }
+    }
+
+    return gainAndSellPairs;
+}
+
+function pairsMatchingToOptionSale(gainAndSellPairs: GainAndSell[], optionSale: OptionSaleTransaction): GainAndSell[] {
+    const exerciseAndSellRows = (optionSale.action === EAC.Action.ExerciseAndSell) ? optionSale.rows : [];
+    const sellToCoverRows = (optionSale.action === EAC.Action.SellToCover) ? optionSale.rows.filter(isSellToCoverSellRow): [];
+    const unmatchedOptionSaleRows = [...exerciseAndSellRows, ...sellToCoverRows];
+    const easPrices = _.uniq(unmatchedOptionSaleRows.map(r => r.salePriceUSD));
+
+    const isValidMatching = (pairs: GainAndSell[], rows: typeof unmatchedOptionSaleRows): boolean => {
+        // Total number of shares should match
+        if (_.sumBy(pairs, ([g,]) => g.quantity) !== _.sumBy(rows, r => r.sharesExercised)) {
+            return false;
+        }
+
+        // Each row should match to a single pair, however one pair might have multiple rows
+        if (pairs.length > rows.length) {
+            return false;
+        }
+
+        // TODO: This logic is probably not completely exhaustive
+        return true;
+    }
+
+    const matchedPairs: GainAndSell[] = [];
+
+    for (const price of easPrices) {
+        const easRows = unmatchedOptionSaleRows.filter(r => r.salePriceUSD === price);
+        const pairs = gainAndSellPairs.filter(([,sell]) => sell.priceUSD === price);
+
+        const candidates: GainAndSell[][] = [[]];
+        for (const pair of pairs) {
+            const previousCandidates = [...candidates];
+            for (const candidate of previousCandidates) {
+                candidates.push([...candidate, pair]);
+            }
+        }
+        console.log({pairs, candidates});
+
+        const validMatch = candidates.find(candidate => isValidMatching(candidate, easRows));
+        if (validMatch === undefined) {
+            throw new Error(`Couldn't find a matching for Exercise and Sell ${optionSale.date} for salePrice ${price}`);
+        }
+        console.log('Found matching pairs', validMatch, easRows);
+        matchedPairs.push(...validMatch);
+    }
+
+    return matchedPairs;
 }
 
 export type TransactionWithCostBasis = {
@@ -64,14 +163,27 @@ export function buildLots(stockTransactions: StockTransaction[], eacHistory: EAC
     const lots: Lot[] = [];
     for (const spaTransaction of spaTransactions) {
         const lapseTransaction = findLapseTransaction(spaTransaction, eacHistory);
-        if (!lapseTransaction?.lapseDetails) throw new Error('Could not match to lapse');
+        const sellToCoverTransaction = findSellToCoverTransaction(spaTransaction, eacHistory);
+        if (lapseTransaction !== undefined) {
+            lots.push({
+                symbol: spaTransaction.symbol,
+                quantity: spaTransaction.quantity,
+                purchaseDate: lapseTransaction.date,
+                purchasePriceUSD: lapseTransaction.lapseDetails.fmvUSD,
+            })
+        }
+        else if (sellToCoverTransaction !== undefined) {
+            lots.push({
+                symbol: spaTransaction.symbol,
+                quantity: spaTransaction.quantity,
+                purchaseDate: sellToCoverTransaction.date,
+                purchasePriceUSD: sellToCoverTransaction.rows.find(isSellToCoverHoldRow)?.awardPriceUSD || 0, // TODO: This is probably not the correct purchase price. We should use the FMV price instead.
+            })
+        }
+        else {
+            throw new Error('Could not match Stock Plan Activity to Lapse or Sell To Cover transaction');
+        }
 
-        lots.push({
-            symbol: spaTransaction.symbol,
-            quantity: spaTransaction.quantity,
-            purchaseDate: lapseTransaction.date,
-            purchasePriceUSD: lapseTransaction.lapseDetails.fmvUSD,
-        })
     }
 
     // Merge lots with same date and price
@@ -94,7 +206,7 @@ export function buildLots(stockTransactions: StockTransaction[], eacHistory: EAC
  * @param spaTransaction transaction for gain of shares in Individual history
  * @param eacHistory full EAC History
  */
-function findLapseTransaction(spaTransaction: Individual.StockPlanActivityTransaction, eacHistory: EAC.Transaction[]): EAC.LapseTransaction {
+function findLapseTransaction(spaTransaction: Individual.StockPlanActivityTransaction, eacHistory: EAC.Transaction[]): EAC.LapseTransaction | undefined {
     const sortedLapseTransactions = eacHistory.filter(isLapseTransaction).sort(sortReverseChronologicalBy(t => t.date));
     
     const isBeforeSPA = (lapseTransaction: EAC.LapseTransaction) => isBefore(lapseTransaction.date, spaTransaction.date);
@@ -104,8 +216,19 @@ function findLapseTransaction(spaTransaction: Individual.StockPlanActivityTransa
 
     const lapseTransaction = sortedLapseTransactions.find(lt => isBeforeSPA(lt) && quantityMatchesSPA(lt));
 
-    if (!lapseTransaction) throw new Error('Could not match to lapse');
+    //if (!lapseTransaction) throw new Error('Could not match to lapse');
     return lapseTransaction;
+}
+
+function findSellToCoverTransaction(spaTransaction: Individual.StockPlanActivityTransaction, eacHistory: EAC.Transaction[]): EAC.SellToCoverTransaction | undefined {
+    const sellToCoverTransactions = eacHistory.filter(isSellToCoverTransaction);
+
+    const isCloseToSPA = (sellToCoverTransaction: EAC.SellToCoverTransaction) => isWithinAWeek(spaTransaction.date, sellToCoverTransaction.date);
+    const quantityMatchesSPA = (sellToCoverTransaction: EAC.SellToCoverTransaction) => 
+        sellToCoverTransaction.rows.filter(isSellToCoverHoldRow).some(r => r.sharesExercised === spaTransaction.quantity);
+
+    const sellToCoverTransaction = sellToCoverTransactions.find(sct => isCloseToSPA(sct) && quantityMatchesSPA(sct));
+    return sellToCoverTransaction;
 }
 
 /**
@@ -234,11 +357,13 @@ export function calculateTaxes(
         // Filter out non-stock transactions
         const stockTransactions = filterStockTransactions(individualHistory);
 
+        const transactionsWithoutOptionSales = filterOutOptionSales(stockTransactions, eacHistory);
+
         // Build list of lots
-        const lots = buildLots(stockTransactions, eacHistory);
+        const lots = buildLots(transactionsWithoutOptionSales, eacHistory);
 
         // Calculate correct cost basis
-        const transactionsWithCostBasis = calculateCostBases(stockTransactions, lots);
+        const transactionsWithCostBasis = calculateCostBases(transactionsWithoutOptionSales, lots);
 
         // Create tax report
         const taxReport = createTaxReport(transactionsWithCostBasis, ecbConverter);

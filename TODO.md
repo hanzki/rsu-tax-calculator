@@ -4,4 +4,4 @@
     * Check https://react-pdf.org/
 * Make sure fees are not double counted 
 * Support hankintameno-olettama
-* Add support for options
+* Add overrides for non-ecb exchange rates

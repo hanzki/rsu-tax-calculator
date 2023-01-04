@@ -23,6 +23,158 @@ describe('calculator', () => {
         });
     });
 
+    describe('filterOutOptionSales', () => {
+        let stockTransactions: Calculator.StockTransaction[];
+        let eacHistory: EAC.Transaction[];
+        let result: Calculator.StockTransaction[];
+
+        describe('when there are no option transactions', () => {
+            beforeEach(() => {
+                stockTransactions = [
+                    IndividualHistoryData.sellTransaction(),
+                    IndividualHistoryData.spaTransaction(),
+                ];
+    
+                eacHistory = [
+                    EACHistoryData.lapseTransaction({date: new Date(2021, 9, 25), lapseDetails: {sharesDeposited: 42, fmvUSD: 69}}),
+                    EACHistoryData.lapseTransaction({date: new Date(2021, 7, 25), lapseDetails: {sharesDeposited: 42, fmvUSD: 47}}),
+                    EACHistoryData.lapseTransaction({date: new Date(2021, 7, 25), lapseDetails: {sharesDeposited: 5, fmvUSD: 47}})
+                ]
+    
+                result = Calculator.filterOutOptionSales(stockTransactions, eacHistory);
+            });
+    
+            it('should not filter any transactions', () => {
+                expect(result).toEqual(stockTransactions);
+            });
+        });
+
+        describe('when there is an exercise & sell transaction', () => {
+            let otherTransactions: Calculator.StockTransaction[];
+            beforeEach(() => {
+                stockTransactions = [
+                    IndividualHistoryData.sellTransaction({ date: new Date(2021, 7, 30), quantity: 50, priceUSD: 8.7}),
+                    IndividualHistoryData.sellTransaction({ date: new Date(2021, 7, 25), quantity: 250, priceUSD: 9.5, feesUSD: 0.5}),
+                    IndividualHistoryData.sellTransaction({ date: new Date(2021, 7, 25), quantity: 250, priceUSD: 9.5, feesUSD: 0.5}),
+                    IndividualHistoryData.spaTransaction({ date: new Date(2021, 7, 25), quantity: 250}),
+                    IndividualHistoryData.spaTransaction({ date: new Date(2021, 7, 25), quantity: 250}),
+                    IndividualHistoryData.spaTransaction({ date: new Date(2021, 7, 17), quantity: 57}),
+                ];
+                otherTransactions = [stockTransactions[0], stockTransactions[5]];
+    
+                eacHistory = [
+                    EACHistoryData.exerciseAndSellTransaction({
+                        date: new Date(2021, 7, 25),
+                        quantity: 500,
+                        feesUSD: 1,
+                        amountUSD: 3499,
+                        rows: [
+                            {
+                                awardID: 'XXXXX',
+                                sharesExercised: 250,
+                                awardPriceUSD: 2.5,
+                                salePriceUSD: 9.5,
+                                awardType: 'XX',
+                                awardDate: new Date(2015, 9, 1)
+                            },
+                            {
+                                awardID: 'XXXXX',
+                                sharesExercised: 250,
+                                awardPriceUSD: 2.5,
+                                salePriceUSD: 9.5,
+                                awardType: 'XX',
+                                awardDate: new Date(2015, 9, 1)
+                            },
+                        ],
+                        details: {
+                            exerciseCostUSD: 1250,
+                            grossProceedsUSD: 4750,
+                            netProceedsUSD: 3499,
+                        }
+                    })
+                ]
+    
+                result = Calculator.filterOutOptionSales(stockTransactions, eacHistory);
+            });
+    
+            it('should only return transactions which are not related to the sale of options', () => {
+                expect(result).toEqual(otherTransactions);
+            });
+        });
+
+        describe('when multiple option sale rows show up as single sale transaction', () => {
+            let otherTransactions: Calculator.StockTransaction[];
+            beforeEach(() => {
+                stockTransactions = [
+                    IndividualHistoryData.sellTransaction({ date: new Date(2021, 7, 30), quantity: 50, priceUSD: 8.7}),
+                    IndividualHistoryData.sellTransaction({ date: new Date(2021, 7, 25), quantity: 5, priceUSD: 9.51}),
+                    IndividualHistoryData.sellTransaction({ date: new Date(2021, 7, 25), quantity: 800, priceUSD: 9.5}),
+                    IndividualHistoryData.sellTransaction({ date: new Date(2021, 7, 25), quantity: 100, priceUSD: 9.5}),
+                    IndividualHistoryData.spaTransaction({ date: new Date(2021, 7, 25), quantity: 5}),
+                    IndividualHistoryData.spaTransaction({ date: new Date(2021, 7, 25), quantity: 800}),
+                    IndividualHistoryData.spaTransaction({ date: new Date(2021, 7, 25), quantity: 100}),
+                    IndividualHistoryData.spaTransaction({ date: new Date(2021, 7, 17), quantity: 57}),
+                ];
+                otherTransactions = [stockTransactions[0], stockTransactions[7]];
+    
+                eacHistory = [
+                    EACHistoryData.exerciseAndSellTransaction({
+                        date: new Date(2021, 7, 25),
+                        quantity: 905,
+                        rows: [
+                            {
+                                awardID: 'XXXXX',
+                                sharesExercised: 379,
+                                awardPriceUSD: 2.5,
+                                salePriceUSD: 9.5,
+                                awardType: 'XX',
+                                awardDate: new Date(2015, 9, 1)
+                            },
+                            {
+                                awardID: 'XXXXX',
+                                sharesExercised: 408,
+                                awardPriceUSD: 2.5,
+                                salePriceUSD: 9.5,
+                                awardType: 'XX',
+                                awardDate: new Date(2015, 9, 1)
+                            },
+                            {
+                                awardID: 'XXXXX',
+                                sharesExercised: 100,
+                                awardPriceUSD: 2.5,
+                                salePriceUSD: 9.5,
+                                awardType: 'XX',
+                                awardDate: new Date(2015, 9, 1)
+                            },
+                            {
+                                awardID: 'XXXXX',
+                                sharesExercised: 5,
+                                awardPriceUSD: 2.5,
+                                salePriceUSD: 9.51,
+                                awardType: 'XX',
+                                awardDate: new Date(2015, 9, 1)
+                            },
+                            {
+                                awardID: 'XXXXX',
+                                sharesExercised: 13,
+                                awardPriceUSD: 2.5,
+                                salePriceUSD: 9.5,
+                                awardType: 'XX',
+                                awardDate: new Date(2015, 9, 1)
+                            },
+                        ],
+                    })
+                ]
+    
+                result = Calculator.filterOutOptionSales(stockTransactions, eacHistory);
+            });
+    
+            it('should only return transactions which are not related to the sale of options', () => {
+                expect(result).toEqual(otherTransactions);
+            });
+        });
+    });
+
     describe('buildLots', () => {
         let stockTransactions: Calculator.StockTransaction[];
         let eacHistory: EAC.Transaction[];

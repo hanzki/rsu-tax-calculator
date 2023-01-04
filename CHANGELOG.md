@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.7.0-beta
+* Added calculation support for ExerciseAndSell transactions.
+* Added calculation support for SellToCover transactions.
+* Added parsing suppport for CancelSell transactions.
+* Added UI warnings for known issues with the calculator.
+
 ## v0.6.1-beta
 * Aligned some of the terminology with OmaVero.
 * Made the version number a link to the changelog.
