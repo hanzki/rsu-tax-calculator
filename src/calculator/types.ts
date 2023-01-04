@@ -2,6 +2,7 @@ import { Number, String, Literal, Record, Union, InstanceOf, Static, Array } fro
 
 export namespace Individual {
     export enum Action {
+        CancelSell = 'Cancel Sell',
         CreditInterest = 'Credit Interest',
         Journal = 'Journal',
         MiscCashEntry = 'Misc Cash Entry',
@@ -11,6 +12,19 @@ export namespace Individual {
         StockPlanActivity = 'Stock Plan Activity',
         WireSent = 'Wire Sent',
     };
+
+    const CancelSellTransaction = Record({
+        action: Literal(Action.CancelSell),
+        date: InstanceOf(Date),
+        asOfDate: InstanceOf(Date).optional(),
+        symbol: String,
+        description: String,
+        quantity: Number,
+        priceUSD: Number,
+        feesUSD: Number.optional(),
+        amountUSD: Number,
+    });
+    export type CancelSellTransaction = Static<typeof CancelSellTransaction>;
 
     const CreditInterestTransaction = Record({
         action: Literal(Action.CreditInterest),
@@ -48,6 +62,7 @@ export namespace Individual {
     const SellTransaction = Record({
         action: Literal(Action.Sell),
         date: InstanceOf(Date),
+        asOfDate: InstanceOf(Date).optional(),
         symbol: String,
         description: String,
         quantity: Number,
@@ -84,6 +99,7 @@ export namespace Individual {
     export type WireSentTransaction = Static<typeof WireSentTransaction>;
 
     export const Transaction = Union(
+        CancelSellTransaction,
         CreditInterestTransaction,
         JournalTransaction,
         MiscCashEntryTransaction,
@@ -210,6 +226,7 @@ export namespace EAC {
         awardType: String,
         awardDate: InstanceOf(Date),
     });
+    export type SellToCoverSellRow = Static<typeof SellToCoverSellRow>;
 
     const SellToCoverHoldRow = Record({
         action: Literal(SellToCoverAction.Hold),
@@ -219,6 +236,7 @@ export namespace EAC {
         awardType: String,
         awardDate: InstanceOf(Date),
     });
+    export type SellToCoverHoldRow = Static<typeof SellToCoverHoldRow>;
 
     const SellToCoverTransaction = Record({
         action: Literal(Action.SellToCover),
