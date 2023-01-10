@@ -5,3 +5,4 @@
 * Make sure fees are not double counted 
 * Support hankintameno-olettama
 * Add overrides for non-ecb exchange rates
+* Support CancelSell transactions in calculator

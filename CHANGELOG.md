@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.7.1-beta
+* Added parsing support for NRA Tax Adj transactions
+
 ## v0.7.0-beta
 * Added calculation support for ExerciseAndSell transactions.
 * Added calculation support for SellToCover transactions.

@@ -6,6 +6,7 @@ export namespace Individual {
         CreditInterest = 'Credit Interest',
         Journal = 'Journal',
         MiscCashEntry = 'Misc Cash Entry',
+        NRATaxAdj = 'NRA Tax Adj',
         SecurityTransfer = 'Security Transfer',
         Sell = 'Sell',
         ServiceFee = 'Service Fee',
@@ -49,6 +50,14 @@ export namespace Individual {
         amountUSD: Number,
     });
     export type MiscCashEntryTransaction = Static<typeof MiscCashEntryTransaction>;
+
+    const NRATaxAdjTransaction = Record({
+        action: Literal(Action.NRATaxAdj),
+        date: InstanceOf(Date),
+        description: String,
+        amountUSD: Number,
+    });
+    export type NRATaxAdjTransaction = Static<typeof NRATaxAdjTransaction>;
     
     const SecurityTransferTransaction = Record({
         action: Literal(Action.SecurityTransfer),
@@ -103,6 +112,7 @@ export namespace Individual {
         CreditInterestTransaction,
         JournalTransaction,
         MiscCashEntryTransaction,
+        NRATaxAdjTransaction,
         SecurityTransferTransaction,
         SellTransaction,
         ServiceFeeTransaction,
