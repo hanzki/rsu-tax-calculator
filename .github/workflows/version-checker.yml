@@ -19,7 +19,7 @@ jobs:
 
       - name: Check for CHANGELOG.md updates
         run: |
-          if grep -q "^CHANGELOG.md$" <<< "${{ steps.get_changed_files.outputs.files }}"; then
+          if grep -q "^CHANGELOG.md$" <<< "${{ steps.changed-files.outputs.files }}"; then
             echo "CHANGELOG.md updated"
           else
             echo "ERROR: CHANGELOG.md not updated"
