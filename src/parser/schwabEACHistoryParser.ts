@@ -213,20 +213,25 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
             if (!_.isEqual(parsed.data[i+1], SALE_HEADER)) {
                 throwParsingError(parsed.data[i+1], SALE_HEADER);
             }
-            const saleDetailsLine = readLine(parsed.data[i+2], SALE_HEADER);
-            const saleDetails = {
-                type: saleDetailsLine[FIELD_SALE_TYPE],
-                shares: parseQuantity(saleDetailsLine[FIELD_SALE_SHARES]),
-                salePriceUSD: parseUSD(saleDetailsLine[FIELD_SALE_SALE_PRICE]),
-                subscriptionDate: parseDates(saleDetailsLine[FIELD_SALE_SUBSCRIPTION_DATE])[0],
-                subscriptionFMVUSD: parseUSD(saleDetailsLine[FIELD_SALE_SUBSCRIPTION_FMV]),
-                purchaseDate: parseDates(saleDetailsLine[FIELD_SALE_PURCHASE_DATE])[0],
-                purchasePriceUSD: parseUSD(saleDetailsLine[FIELD_SALE_PURCHASE_PRICE]),
-                purchaseFMVUSD: parseUSD(saleDetailsLine[FIELD_SALE_PURCHASE_FMV]),
-                grossProceedsUSD: parseUSD(saleDetailsLine[FIELD_SALE_GROSS_PROCEEDS]),
+            // Read 1-N sale details rows
+            const saleDetailsRows = [];
+            while (_.isEqual(parsed.data[i+1], SALE_HEADER)) {
+                const saleDetailsRowLine = readLine(parsed.data[i+2], SALE_HEADER);
+                const saleDetailsRow = {
+                    type: saleDetailsRowLine[FIELD_SALE_TYPE],
+                    shares: parseQuantity(saleDetailsRowLine[FIELD_SALE_SHARES]),
+                    salePriceUSD: parseUSD(saleDetailsRowLine[FIELD_SALE_SALE_PRICE]),
+                    subscriptionDate: parseDates(saleDetailsRowLine[FIELD_SALE_SUBSCRIPTION_DATE])[0],
+                    subscriptionFMVUSD: parseUSD(saleDetailsRowLine[FIELD_SALE_SUBSCRIPTION_FMV]),
+                    purchaseDate: parseDates(saleDetailsRowLine[FIELD_SALE_PURCHASE_DATE])[0],
+                    purchasePriceUSD: parseUSD(saleDetailsRowLine[FIELD_SALE_PURCHASE_PRICE]),
+                    purchaseFMVUSD: parseUSD(saleDetailsRowLine[FIELD_SALE_PURCHASE_FMV]),
+                    grossProceedsUSD: parseUSD(saleDetailsRowLine[FIELD_SALE_GROSS_PROCEEDS]),
+                }
+                saleDetailsRows.push(saleDetailsRow);
+                i = i+2;
             }
-            eacTransaction.saleDetails = saleDetails;
-            i = i+2;
+            eacTransaction.rows = saleDetailsRows;
         }
 
         if (eacTransaction.action === EAC.Action.Lapse) {
