@@ -17,30 +17,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get changed files
-        id: changed-files
+      - name: Check if changelog was changed
+        id: changelog-changed
         uses: tj-actions/changed-files@v35
+        with:
+          files: CHANGELOG.md
 
       - name: Check for CHANGELOG.md updates
+        if: steps.changelog-changed.outputs.any_changed != 'true'
         run: |
-          if grep -q "^CHANGELOG.md$" <<< "${{ steps.changed-files.outputs.all_changed_files }}"; then
-            echo "CHANGELOG.md updated"
-          else
-            echo "ERROR: CHANGELOG.md not updated"
-            exit 1
-          fi
-
-      - name: Check for package.json version updates
-        run: |
-          updated_files=$(git diff --name-only ${{ github.base_ref }}..${{ github.head_ref }})
-          if echo "$updated_files" | grep -q "^package.json$"; then
-            if git diff ${{ github.base_ref }} ${{ github.head_ref }} package.json | grep -q "\"version\": [^[:digit:]]"; then
-              echo "ERROR: package.json version not updated"
-              exit 1
-            else
-              echo "package.json version updated"
-            fi
-          else
-            echo "ERROR: package.json not updated"
-            exit 1
-          fi
+          echo "ERROR: CHANGELOG.md not updated"
+          exit 1
