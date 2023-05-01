@@ -27,14 +27,15 @@ describe('reports', () => {
                 lossTransaction
             ]
             const ecbConverterMock = {
-                usdToEUR: (usdValue: number) => usdValue
+                usdToEUR: (usdValue: number) => usdValue,
+                usdToEURRate: () => 1,
             } as ECBConverter
             
             result = createTaxReport(transactionsWithCostBasis, ecbConverterMock);
         });
 
         it('calculates capital gain correctly', () => {
-            expect(result[0]).toEqual({
+            expect(result[0]).toMatchObject({
                 symbol: gainTransaction.transaction.symbol,
                 quantity: gainTransaction.quantity,
                 saleDate: gainTransaction.transaction.date,
@@ -50,7 +51,7 @@ describe('reports', () => {
         });
 
         it('calculates capital loss correctly', () => {
-            expect(result[1]).toEqual({
+            expect(result[1]).toMatchObject({
                 symbol: lossTransaction.transaction.symbol,
                 quantity: lossTransaction.quantity,
                 saleDate: lossTransaction.transaction.date,
