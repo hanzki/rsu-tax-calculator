@@ -54,7 +54,7 @@ export function createESPPTaxReport(transactionsWithCostBasis: ESPPTransactionWi
         const saleDate = transactionWithCostBasis.transaction.date;
         const purchaseDate = transactionWithCostBasis.purchaseDate;
         const salePriceEUR = ecbConverter.usdToEUR(
-            transactionWithCostBasis.transaction.saleDetails.salePriceUSD,
+            transactionWithCostBasis.transaction.rows[0].salePriceUSD, // TODO: Is it correct to always take the first row?
             saleDate
         );
         const saleFeesEUR = transactionWithCostBasis.transaction.feesUSD ?

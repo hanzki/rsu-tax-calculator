@@ -3,7 +3,7 @@ import _ from "lodash";
 import { ECBConverter } from "../ecbRates";
 import { isWithinAWeek, sortChronologicalBy, sortReverseChronologicalBy } from "../util";
 import { EAC, Individual } from "./types";
-import { ForfeitureEvent, LotMatch, matchLots } from "./util";
+import { ForfeitureEvent, matchLots } from "./util";
 
 export interface TaxSaleOfSecurity {
     symbol: string,
@@ -285,12 +285,15 @@ export type ESPPTransactionWithCostBasis = {
 
 export function calculateESPPSales(eacHistory: EAC.Transaction[]): ESPPTransactionWithCostBasis[] {
     const esppSaleTransactions = eacHistory.filter(isSaleTransaction);
-    return esppSaleTransactions.map(t => ({
-        transaction: t,
-        purchaseDate: t.saleDetails.purchaseDate,
-        purchasePriceUSD: t.saleDetails.purchaseFMVUSD,
-        quantity: t.quantity,
-    }))
+    return esppSaleTransactions.reduce<ESPPTransactionWithCostBasis[]>((results, esppSaleTransaction) => {
+        results.push(...esppSaleTransaction.rows.map( detailsRow => ({
+            transaction: esppSaleTransaction,
+            purchaseDate: detailsRow.purchaseDate,
+            purchasePriceUSD: detailsRow.purchaseFMVUSD,
+            quantity: detailsRow.shares,
+        })));
+        return results;
+    }, []);
 }
 
 /**
@@ -354,6 +357,8 @@ export function calculateTaxes(
         const transactionsWithCostBasis = calculateCostBases(transactionsWithoutOptionSales, lots);
 
         const esppTransactionsWithCostBasis = calculateESPPSales(eacHistory);
+
+        console.debug("ESPP", esppTransactionsWithCostBasis);
 
         // Create tax report
         const taxReport = createTaxReport(transactionsWithCostBasis, ecbConverter);
