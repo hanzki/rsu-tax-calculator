@@ -13,7 +13,7 @@ jobs:
 
       - name: Check for CHANGELOG.md updates
         run: |
-          updated_files=$(git diff --name-only HEAD^..HEAD)
+          updated_files=$(git diff --name-only "$github.base_ref".."$github.source_ref")
           if echo "$updated_files" | grep -q "^CHANGELOG.md$"; then
             echo "CHANGELOG.md updated"
           else
@@ -23,9 +23,9 @@ jobs:
 
       - name: Check for package.json version updates
         run: |
-          updated_files=$(git diff --name-only HEAD^..HEAD)
+          updated_files=$(git diff --name-only "$github.base_ref".."$github.source_ref")
           if echo "$updated_files" | grep -q "^package.json$"; then
-            if git diff HEAD^ HEAD package.json | grep -q "\"version\": [^[:digit:]]"; then
+            if git diff "$github.base_ref" "$github.source_ref" package.json | grep -q "\"version\": [^[:digit:]]"; then
               echo "ERROR: package.json version not updated"
               exit 1
             else
