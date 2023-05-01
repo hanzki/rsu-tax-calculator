@@ -31,6 +31,7 @@ type OptionSaleTransaction = EAC.ExerciseAndSellTransaction | EAC.SellToCoverTra
 const isLapseTransaction = (t: EAC.Transaction): t is EAC.LapseTransaction => t.action === EAC.Action.Lapse;
 const isExerciseAndSellTransaction = (t: EAC.Transaction): t is EAC.ExerciseAndSellTransaction => t.action === EAC.Action.ExerciseAndSell;
 const isSellToCoverTransaction = (t: EAC.Transaction): t is EAC.SellToCoverTransaction => t.action === EAC.Action.SellToCover;
+const isSaleTransaction = (t: EAC.Transaction): t is EAC.SaleTransaction => t.action === EAC.Action.Sale;
 const isOptionSaleTransaction = (t: EAC.Transaction): t is OptionSaleTransaction => isExerciseAndSellTransaction(t) || isSellToCoverTransaction(t);
 
 const isSellToCoverSellRow = (r: EAC.SellToCoverTransaction['rows'][number]): r is EAC.SellToCoverSellRow => r.action === EAC.SellToCoverAction.Sell;
@@ -275,6 +276,23 @@ export function calculateCostBases(stockTransactions: StockTransaction[], lots: 
     return results;
 }
 
+export type ESPPTransactionWithCostBasis = {
+    transaction: EAC.SaleTransaction,
+    purchaseDate: Date,
+    purchasePriceUSD: number,
+    quantity: number,
+}
+
+export function calculateESPPSales(eacHistory: EAC.Transaction[]): ESPPTransactionWithCostBasis[] {
+    const esppSaleTransactions = eacHistory.filter(isSaleTransaction);
+    return esppSaleTransactions.map(t => ({
+        transaction: t,
+        purchaseDate: t.saleDetails.purchaseDate,
+        purchasePriceUSD: t.saleDetails.purchaseFMVUSD,
+        quantity: t.quantity,
+    }))
+}
+
 /**
  * Builds tax report from the transactions.
  * @param transactionsWithCostBasis list of transactions with correct purchase prices. See {@link calculateCostBases}.
@@ -334,6 +352,8 @@ export function calculateTaxes(
 
         // Calculate correct cost basis
         const transactionsWithCostBasis = calculateCostBases(transactionsWithoutOptionSales, lots);
+
+        const esppTransactionsWithCostBasis = calculateESPPSales(eacHistory);
 
         // Create tax report
         const taxReport = createTaxReport(transactionsWithCostBasis, ecbConverter);

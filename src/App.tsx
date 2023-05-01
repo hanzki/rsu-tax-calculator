@@ -8,6 +8,7 @@ import { CalculationSettings, InputPanel } from './InputPanel/InputPanel';
 import { ResultsPanel } from './ResultsPanel/ResultsPanel';
 import { InstructionsPanel } from './InstructionsPanel/InstructionsPanel';
 import { Footer } from './Footer';
+import { calculateTaxes as esppCalculateTaxes } from './calculator/espp';
 
 const theme = createTheme();
 
@@ -38,6 +39,7 @@ function App() {
         }
         try {
           setTaxReport(calculateTaxes(settings.individualHistory, settings.eacHistory, ecbConverter));
+          //esppCalculateTaxes(settings.eacHistory, ecbConverter);
         } catch (error: any) {
           setError(error);
           setCalculating(false);
