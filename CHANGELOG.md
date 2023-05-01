@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.7.3-beta
+* New version!
+
 ## v0.7.2-beta
 * Fixed bug in parsing for ESPP Sale events with multiple detail rows
 
