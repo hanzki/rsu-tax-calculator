@@ -15,18 +15,24 @@ export function createTaxReport(transactionsWithCostBasis: TransactionWithCostBa
         const quantity = transactionWithCostBasis.quantity;
         const saleDate = transactionWithCostBasis.transaction.date;
         const purchaseDate = transactionWithCostBasis.purchaseDate;
+        const saleUSDEURRate = ecbConverter.usdToEURRate(saleDate);
+        const purchaseUSDEURRate = ecbConverter.usdToEURRate(purchaseDate);
+        const salePriceUSD = transactionWithCostBasis.transaction.priceUSD;
         const salePriceEUR = ecbConverter.usdToEUR(
-            transactionWithCostBasis.transaction.priceUSD,
+            salePriceUSD,
             saleDate
         );
+        const saleFeesUSD = transactionWithCostBasis.transaction.feesUSD || 0;
         const saleFeesEUR = transactionWithCostBasis.transaction.feesUSD ?
-            ecbConverter.usdToEUR(transactionWithCostBasis.transaction.feesUSD, saleDate)
+            ecbConverter.usdToEUR(saleFeesUSD, saleDate)
             :
             0; // TODO: fees getting double counted
+        const purchasePriceUSD = transactionWithCostBasis.purchasePriceUSD;
         const purchasePriceEUR = ecbConverter.usdToEUR(
-            transactionWithCostBasis.purchasePriceUSD,
+            purchasePriceUSD,
             purchaseDate
         );
+        const purchaseFeesUSD = 0;
         const purchaseFeesEUR = 0;
 
         const gainloss = (salePriceEUR * quantity) - (purchasePriceEUR * quantity) - saleFeesEUR - purchaseFeesEUR;
@@ -35,14 +41,20 @@ export function createTaxReport(transactionsWithCostBasis: TransactionWithCostBa
             quantity,
             saleDate,
             purchaseDate,
+            salePriceUSD,
             salePriceEUR,
+            saleFeesUSD,
             saleFeesEUR,
+            saleUSDEURRate,
+            purchasePriceUSD,
             purchasePriceEUR,
+            purchaseFeesUSD,
             purchaseFeesEUR,
+            purchaseUSDEURRate,
             deemedAcquisitionCostEUR: 0, // TODO: add support for hankintameno-olettama
             capitalGainEUR: (gainloss > 0) ? gainloss : 0,
             capitalLossEUR: (gainloss < 0) ? -gainloss : 0,
-            isESPP: false,
+            isESPP: false
         }
     });
 }
@@ -54,18 +66,24 @@ export function createESPPTaxReport(transactionsWithCostBasis: ESPPTransactionWi
         const quantity = transactionWithCostBasis.quantity;
         const saleDate = transactionWithCostBasis.transaction.date;
         const purchaseDate = transactionWithCostBasis.purchaseDate;
+        const saleUSDEURRate = ecbConverter.usdToEURRate(saleDate);
+        const purchaseUSDEURRate = ecbConverter.usdToEURRate(purchaseDate);
+        const salePriceUSD = transactionWithCostBasis.transaction.rows[0].salePriceUSD; // TODO: Is it correct to always take the first row?
         const salePriceEUR = ecbConverter.usdToEUR(
-            transactionWithCostBasis.transaction.rows[0].salePriceUSD, // TODO: Is it correct to always take the first row?
+            salePriceUSD,
             saleDate
         );
+        const saleFeesUSD = transactionWithCostBasis.transaction.feesUSD || 0;
         const saleFeesEUR = transactionWithCostBasis.transaction.feesUSD ?
-            ecbConverter.usdToEUR(transactionWithCostBasis.transaction.feesUSD, saleDate)
+            ecbConverter.usdToEUR(saleFeesUSD, saleDate)
             :
             0; // TODO: fees getting double counted
+        const purchasePriceUSD = transactionWithCostBasis.purchasePriceUSD;
         const purchasePriceEUR = ecbConverter.usdToEUR(
-            transactionWithCostBasis.purchasePriceUSD,
+            purchasePriceUSD,
             purchaseDate
         );
+        const purchaseFeesUSD = 0;
         const purchaseFeesEUR = 0;
 
         const gainloss = (salePriceEUR * quantity) - (purchasePriceEUR * quantity) - saleFeesEUR - purchaseFeesEUR;
@@ -74,10 +92,16 @@ export function createESPPTaxReport(transactionsWithCostBasis: ESPPTransactionWi
             quantity,
             saleDate,
             purchaseDate,
+            salePriceUSD,
             salePriceEUR,
+            saleFeesUSD,
             saleFeesEUR,
+            saleUSDEURRate,
+            purchasePriceUSD,
             purchasePriceEUR,
+            purchaseFeesUSD,
             purchaseFeesEUR,
+            purchaseUSDEURRate,
             deemedAcquisitionCostEUR: 0, // TODO: add support for hankintameno-olettama
             capitalGainEUR: (gainloss > 0) ? gainloss : 0,
             capitalLossEUR: (gainloss < 0) ? -gainloss : 0,

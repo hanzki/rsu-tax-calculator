@@ -59,9 +59,9 @@ return <Box>
                 </TableCell>
                 <TableCell align="right">{format(row.purchaseDate, 'yyyy-MM-dd')}</TableCell>
                 <TableCell align="right">{format(row.saleDate, 'yyyy-MM-dd')}</TableCell>
-                <TableCell align="right">{row.purchasePriceEUR.toFixed(3)}</TableCell>
-                <TableCell align="right">{row.salePriceEUR.toFixed(3)}</TableCell>
-                <TableCell align="right">{row.saleFeesEUR.toFixed(3)}</TableCell>
+                <TableCell align="right">{row.purchasePriceEUR.toFixed(2)}</TableCell>
+                <TableCell align="right">{row.salePriceEUR.toFixed(2)}</TableCell>
+                <TableCell align="right">{row.saleFeesEUR.toFixed(2)}</TableCell>
                 <TableCell align="right">{row.quantity}</TableCell>
                 <TableCell align="right">{row.capitalLossEUR.toFixed(2)}</TableCell>
                 <TableCell align="right">{row.capitalGainEUR.toFixed(2)}</TableCell>
