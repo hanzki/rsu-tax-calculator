@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.7.2-beta
+* Fixed bug in parsing for ESPP Sale events with multiple detail rows
+
 ## v0.7.1-beta
 * Added parsing support for NRA Tax Adj transactions
 
