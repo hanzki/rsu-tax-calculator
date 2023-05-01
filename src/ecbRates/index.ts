@@ -34,6 +34,11 @@ export class ECBConverter {
     }
 
     usdToEUR(usdValue: number, date: Date = new Date()): number {
+        const rate = this.usdToEURRate(date);
+        return usdValue * rate;
+    }
+
+    usdToEURRate(date: Date = new Date()): number {
         const dateKey = format(date, 'yyyy-MM-dd');
 
         const eurToUSDRate = this.rates.get(dateKey);
@@ -43,7 +48,7 @@ export class ECBConverter {
             throw new Error(`No exchange rate for ${dateKey}`);
         }
 
-        return usdValue / eurToUSDRate;
+        return 1 / eurToUSDRate;
     }
 
     static async loadECBData(): Promise<ECBConverter> {

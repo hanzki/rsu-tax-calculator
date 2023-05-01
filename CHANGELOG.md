@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.8.0-beta
+* Added support for calculating sale of ESPP shares
+
 ## v0.7.2-beta
 * Fixed bug in parsing for ESPP Sale events with multiple detail rows
 

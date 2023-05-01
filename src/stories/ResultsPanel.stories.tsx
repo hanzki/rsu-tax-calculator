@@ -30,18 +30,26 @@ const saleOfSecurity = (data: Partial<TaxSaleOfSecurity> = {}): TaxSaleOfSecurit
   const gainloss = (salePriceEUR - purchasePriceEUR) * quantity - saleFeesEUR;
   const capitalGainEUR = data.capitalGainEUR || (gainloss > 0 ? gainloss : 0);
   const capitalLossEUR = data.capitalLossEUR || (gainloss < 0 ? -gainloss : 0);
+  const isESPP = data.isESPP || random(0, 10) > 7;
   return { 
     symbol: data.symbol || 'V',
     quantity: quantity,
     saleDate: saleDate,
     purchaseDate: purchaseDate,
+    salePriceUSD: -1,
     salePriceEUR: salePriceEUR,
+    saleFeesUSD: -1,
     saleFeesEUR: saleFeesEUR,
+    saleUSDEURRate: -1,
+    purchasePriceUSD: -1,
     purchasePriceEUR: purchasePriceEUR,
+    purchaseFeesUSD: 0,
     purchaseFeesEUR: 0,
+    purchaseUSDEURRate: -1,
     deemedAcquisitionCostEUR: 0,
     capitalGainEUR: capitalGainEUR,
-    capitalLossEUR: capitalLossEUR
+    capitalLossEUR: capitalLossEUR,
+    isESPP: isESPP
   }
 }
 

@@ -10,12 +10,12 @@ export type Subset<K> = {
         : K[attr];
 };
 
-export function sortChronologicalBy(f: (x: any) => Date) {
-    return (a: any, b: any) => compareAsc(f(a), f(b));
+export function sortChronologicalBy<T>(f: (x: T) => Date) {
+    return (a: T, b: T) => compareAsc(f(a), f(b));
 }
 
-export function sortReverseChronologicalBy(f: (x: any) => Date) {
-    return (a: any, b: any) => compareDesc(f(a), f(b));
+export function sortReverseChronologicalBy<T>(f: (x: T) => Date) {
+    return (a: T, b: T) => compareDesc(f(a), f(b));
 }
 
 /**

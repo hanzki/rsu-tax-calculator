@@ -3,19 +3,28 @@ import _ from "lodash";
 import { ECBConverter } from "../ecbRates";
 import { isWithinAWeek, sortChronologicalBy, sortReverseChronologicalBy } from "../util";
 import { EAC, Individual } from "./types";
+import { ForfeitureEvent, matchLots } from "./util";
+import { createESPPTaxReport, createTaxReport } from "./report";
 
 export interface TaxSaleOfSecurity {
     symbol: string,
     quantity: number,
     saleDate: Date,
     purchaseDate: Date,
+    salePriceUSD: number,
     salePriceEUR: number,
+    saleFeesUSD: number,
     saleFeesEUR: number,
+    saleUSDEURRate: number,
+    purchasePriceUSD: number,
     purchasePriceEUR: number,
+    purchaseFeesUSD: number,
     purchaseFeesEUR: number,
+    purchaseUSDEURRate: number,
     deemedAcquisitionCostEUR: number, // hankintameno-olettama
     capitalGainEUR: number,
-    capitalLossEUR: number
+    capitalLossEUR: number,
+    isESPP: boolean
 }
 
 export type StockTransaction = Individual.SellTransaction | Individual.StockPlanActivityTransaction | Individual.SecurityTransferTransaction;
@@ -30,6 +39,7 @@ type OptionSaleTransaction = EAC.ExerciseAndSellTransaction | EAC.SellToCoverTra
 const isLapseTransaction = (t: EAC.Transaction): t is EAC.LapseTransaction => t.action === EAC.Action.Lapse;
 const isExerciseAndSellTransaction = (t: EAC.Transaction): t is EAC.ExerciseAndSellTransaction => t.action === EAC.Action.ExerciseAndSell;
 const isSellToCoverTransaction = (t: EAC.Transaction): t is EAC.SellToCoverTransaction => t.action === EAC.Action.SellToCover;
+const isSaleTransaction = (t: EAC.Transaction): t is EAC.SaleTransaction => t.action === EAC.Action.Sale;
 const isOptionSaleTransaction = (t: EAC.Transaction): t is OptionSaleTransaction => isExerciseAndSellTransaction(t) || isSellToCoverTransaction(t);
 
 const isSellToCoverSellRow = (r: EAC.SellToCoverTransaction['rows'][number]): r is EAC.SellToCoverSellRow => r.action === EAC.SellToCoverAction.Sell;
@@ -245,108 +255,53 @@ export function calculateCostBases(stockTransactions: StockTransaction[], lots: 
     const salesTransactions = stockTransactions.filter(isSellTransaction);
     const outboundStockTransferTransactions = stockTransactions.filter(isSecurityTransferTransaction).filter(t => t.quantity < 0);
     const stockForfeitingTransactions = [...salesTransactions, ...outboundStockTransferTransactions];
-    const chronologicalTransactions = stockForfeitingTransactions.sort(sortChronologicalBy(t => t.date));
-
-    const chrologicalLots = [...lots].sort(sortChronologicalBy(t => t.purchaseDate));
-
-    const lotIterator = chrologicalLots.values();
-    let currentLot: Lot = lotIterator.next().value;
-    let sharesSoldFromCurrentLot = 0;
-
-    const results: TransactionWithCostBasis[] = []
-
-    const throwMissingLotError = () => { throw new Error("Couldn't match sell to a lot"); };
 
     // Outgoing security transfer transactions have negative quantity. We want to use
     // the absolute value instead in order to align the logic with sell transactions
     // which have positive quantity values.
     const absQuantity = (t: StockTransaction) => Math.abs(t.quantity);
 
-    for (const transaction of chronologicalTransactions) {
-        if (!currentLot) throwMissingLotError(); // TODO: Log error?
-        if (absQuantity(transaction) <= currentLot.quantity - sharesSoldFromCurrentLot) {
-            if (isSellTransaction(transaction)) {
-                results.push({
-                    transaction,
-                    purchaseDate: currentLot.purchaseDate,
-                    purchasePriceUSD: currentLot.purchasePriceUSD,
-                    quantity: transaction.quantity,
-                });
-            }
-            sharesSoldFromCurrentLot += absQuantity(transaction);
-        } else {
-            let sharesSoldFromPreviousLot = 0;
-            if (currentLot.quantity - sharesSoldFromCurrentLot > 0) {
-                if (isSellTransaction(transaction)){
-                    results.push({
-                        transaction,
-                        purchaseDate: currentLot.purchaseDate,
-                        purchasePriceUSD: currentLot.purchasePriceUSD,
-                        quantity: currentLot.quantity - sharesSoldFromCurrentLot,
-                    });
-                }
-                sharesSoldFromPreviousLot = currentLot.quantity - sharesSoldFromCurrentLot;
-            }
-            currentLot = lotIterator.next().value;
-            if(!currentLot) throwMissingLotError();
-            sharesSoldFromCurrentLot = 0;
-            if (isSellTransaction(transaction)) {
-                results.push({
-                    transaction,
-                    purchaseDate: currentLot.purchaseDate,
-                    purchasePriceUSD: currentLot.purchasePriceUSD,
-                    quantity: transaction.quantity - sharesSoldFromPreviousLot,
-                });
-            }
-            sharesSoldFromCurrentLot = absQuantity(transaction) - sharesSoldFromPreviousLot;
-        }
+    interface StockForfeitingTransaction extends ForfeitureEvent {
+        transaction: StockTransaction
     }
+
+    const forfeitureEvents: StockForfeitingTransaction[] = stockForfeitingTransactions.map(t => ({
+        date: t.date,
+        quantity: absQuantity(t),
+        transaction: t
+    }));
+
+    const lotMatches = matchLots(lots, forfeitureEvents);
+    const results: TransactionWithCostBasis[] = lotMatches
+        .filter(m => isSellTransaction(m.forfeitureEvent.transaction))
+        .map(m => ({
+            transaction: m.forfeitureEvent.transaction as Individual.SellTransaction,
+            purchaseDate: m.lot.purchaseDate,
+            purchasePriceUSD: m.lot.purchasePriceUSD,
+            quantity: m.quantity,
+        }))
 
     return results;
 }
 
-/**
- * Builds tax report from the transactions.
- * @param transactionsWithCostBasis list of transactions with correct purchase prices. See {@link calculateCostBases}.
- * @param ecbConverter currency converter
- * @returns list of sale of security tax report rows
- */
-export function createTaxReport(transactionsWithCostBasis: TransactionWithCostBasis[], ecbConverter: ECBConverter): TaxSaleOfSecurity[] {
-    const chronologicalTransactions = transactionsWithCostBasis.sort(sortChronologicalBy(t => t.transaction.date));
+export type ESPPTransactionWithCostBasis = {
+    transaction: EAC.SaleTransaction,
+    purchaseDate: Date,
+    purchasePriceUSD: number,
+    quantity: number,
+}
 
-    return chronologicalTransactions.map(transactionWithCostBasis => {
-        const quantity = transactionWithCostBasis.quantity;
-        const saleDate = transactionWithCostBasis.transaction.date;
-        const purchaseDate = transactionWithCostBasis.purchaseDate;
-        const salePriceEUR = ecbConverter.usdToEUR(
-            transactionWithCostBasis.transaction.priceUSD,
-            saleDate
-        );
-        const saleFeesEUR = transactionWithCostBasis.transaction.feesUSD ?
-            ecbConverter.usdToEUR(transactionWithCostBasis.transaction.feesUSD, saleDate)
-            :
-            0; // TODO: fees getting double counted
-        const purchasePriceEUR = ecbConverter.usdToEUR(
-            transactionWithCostBasis.purchasePriceUSD,
-            purchaseDate
-        );
-        const purchaseFeesEUR = 0;
-
-        const gainloss = (salePriceEUR * quantity) - (purchasePriceEUR * quantity) - saleFeesEUR - purchaseFeesEUR;
-        return {
-            symbol: transactionWithCostBasis.transaction.symbol,
-            quantity,
-            saleDate,
-            purchaseDate,
-            salePriceEUR,
-            saleFeesEUR,
-            purchasePriceEUR,
-            purchaseFeesEUR,
-            deemedAcquisitionCostEUR: 0, // TODO: add support for hankintameno-olettama
-            capitalGainEUR: (gainloss > 0) ? gainloss : 0,
-            capitalLossEUR: (gainloss < 0) ? -gainloss : 0
-        }
-    });
+export function calculateESPPSales(eacHistory: EAC.Transaction[]): ESPPTransactionWithCostBasis[] {
+    const esppSaleTransactions = eacHistory.filter(isSaleTransaction);
+    return esppSaleTransactions.reduce<ESPPTransactionWithCostBasis[]>((results, esppSaleTransaction) => {
+        results.push(...esppSaleTransaction.rows.map( detailsRow => ({
+            transaction: esppSaleTransaction,
+            purchaseDate: detailsRow.purchaseDate,
+            purchasePriceUSD: detailsRow.purchaseFMVUSD,
+            quantity: detailsRow.shares,
+        })));
+        return results;
+    }, []);
 }
 
 export function calculateTaxes(
@@ -365,8 +320,15 @@ export function calculateTaxes(
         // Calculate correct cost basis
         const transactionsWithCostBasis = calculateCostBases(transactionsWithoutOptionSales, lots);
 
+        const esppTransactionsWithCostBasis = calculateESPPSales(eacHistory);
+
         // Create tax report
         const taxReport = createTaxReport(transactionsWithCostBasis, ecbConverter);
 
-        return taxReport;
+        // Create ESPP tax report
+        const esppReport = createESPPTaxReport(esppTransactionsWithCostBasis, ecbConverter);
+
+        const combinedReport = [...taxReport, ...esppReport].sort(sortChronologicalBy(row => row.saleDate));
+
+        return combinedReport;
     }
