@@ -198,7 +198,7 @@ export namespace EAC {
     });
     export type LapseTransaction = Static<typeof LapseTransaction>;
 
-    const SaleDetails = Record({
+    const SaleDetailsRow = Record({
         type: String,
         shares: Number,
         salePriceUSD: Number,
@@ -218,7 +218,7 @@ export namespace EAC {
         quantity: Number,
         feesUSD: Number,
         amountUSD: Number,
-        saleDetails: SaleDetails,
+        rows: Array(SaleDetailsRow),
     });
     export type SaleTransaction = Static<typeof SaleTransaction>;
 
