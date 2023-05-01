@@ -41,7 +41,8 @@ export function createTaxReport(transactionsWithCostBasis: TransactionWithCostBa
             purchaseFeesEUR,
             deemedAcquisitionCostEUR: 0, // TODO: add support for hankintameno-olettama
             capitalGainEUR: (gainloss > 0) ? gainloss : 0,
-            capitalLossEUR: (gainloss < 0) ? -gainloss : 0
+            capitalLossEUR: (gainloss < 0) ? -gainloss : 0,
+            isESPP: false,
         }
     });
 }
@@ -79,7 +80,8 @@ export function createESPPTaxReport(transactionsWithCostBasis: ESPPTransactionWi
             purchaseFeesEUR,
             deemedAcquisitionCostEUR: 0, // TODO: add support for hankintameno-olettama
             capitalGainEUR: (gainloss > 0) ? gainloss : 0,
-            capitalLossEUR: (gainloss < 0) ? -gainloss : 0
+            capitalLossEUR: (gainloss < 0) ? -gainloss : 0,
+            isESPP: true
         }
     });
 }

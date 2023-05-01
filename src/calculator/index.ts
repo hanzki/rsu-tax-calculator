@@ -4,6 +4,7 @@ import { ECBConverter } from "../ecbRates";
 import { isWithinAWeek, sortChronologicalBy, sortReverseChronologicalBy } from "../util";
 import { EAC, Individual } from "./types";
 import { ForfeitureEvent, matchLots } from "./util";
+import { createESPPTaxReport } from "./report";
 
 export interface TaxSaleOfSecurity {
     symbol: string,
@@ -16,7 +17,8 @@ export interface TaxSaleOfSecurity {
     purchaseFeesEUR: number,
     deemedAcquisitionCostEUR: number, // hankintameno-olettama
     capitalGainEUR: number,
-    capitalLossEUR: number
+    capitalLossEUR: number,
+    isESPP: boolean
 }
 
 export type StockTransaction = Individual.SellTransaction | Individual.StockPlanActivityTransaction | Individual.SecurityTransferTransaction;
@@ -335,7 +337,8 @@ export function createTaxReport(transactionsWithCostBasis: TransactionWithCostBa
             purchaseFeesEUR,
             deemedAcquisitionCostEUR: 0, // TODO: add support for hankintameno-olettama
             capitalGainEUR: (gainloss > 0) ? gainloss : 0,
-            capitalLossEUR: (gainloss < 0) ? -gainloss : 0
+            capitalLossEUR: (gainloss < 0) ? -gainloss : 0,
+            isESPP: false
         }
     });
 }
@@ -358,10 +361,13 @@ export function calculateTaxes(
 
         const esppTransactionsWithCostBasis = calculateESPPSales(eacHistory);
 
-        console.debug("ESPP", esppTransactionsWithCostBasis);
-
         // Create tax report
         const taxReport = createTaxReport(transactionsWithCostBasis, ecbConverter);
 
-        return taxReport;
+        // Create ESPP tax report
+        const esppReport = createESPPTaxReport(esppTransactionsWithCostBasis, ecbConverter);
+
+        const combinedReport = [...taxReport, ...esppReport].sort(sortChronologicalBy(row => row.saleDate));
+
+        return combinedReport;
     }

@@ -30,6 +30,7 @@ const saleOfSecurity = (data: Partial<TaxSaleOfSecurity> = {}): TaxSaleOfSecurit
   const gainloss = (salePriceEUR - purchasePriceEUR) * quantity - saleFeesEUR;
   const capitalGainEUR = data.capitalGainEUR || (gainloss > 0 ? gainloss : 0);
   const capitalLossEUR = data.capitalLossEUR || (gainloss < 0 ? -gainloss : 0);
+  const isESPP = data.isESPP || random(0, 10) > 7;
   return { 
     symbol: data.symbol || 'V',
     quantity: quantity,
@@ -41,7 +42,8 @@ const saleOfSecurity = (data: Partial<TaxSaleOfSecurity> = {}): TaxSaleOfSecurit
     purchaseFeesEUR: 0,
     deemedAcquisitionCostEUR: 0,
     capitalGainEUR: capitalGainEUR,
-    capitalLossEUR: capitalLossEUR
+    capitalLossEUR: capitalLossEUR,
+    isESPP: isESPP
   }
 }
 
