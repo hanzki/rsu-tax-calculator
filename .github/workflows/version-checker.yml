@@ -1,8 +1,12 @@
 name: Check PR for CHANGELOG.md and package.json updates
 
 on:
+  push:
+    branches:
+      - master
   pull_request:
-    types: [opened, synchronize]
+    branches:
+      - master
 
 jobs:
   check-updates:
