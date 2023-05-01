@@ -13,10 +13,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v35
+
       - name: Check for CHANGELOG.md updates
         run: |
-          updated_files=$(git diff --name-only ${{ github.base_ref }}..${{ github.head_ref }})
-          if echo "$updated_files" | grep -q "^CHANGELOG.md$"; then
+          if grep -q "^CHANGELOG.md$" <<< "${{ steps.get_changed_files.outputs.files }}"; then
             echo "CHANGELOG.md updated"
           else
             echo "ERROR: CHANGELOG.md not updated"
