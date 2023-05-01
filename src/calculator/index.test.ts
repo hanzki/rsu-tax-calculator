@@ -1,6 +1,5 @@
 import { EACHistoryData, IndividualHistoryData } from '../test/data';
 import * as Calculator from './index';
-import { ECBConverter } from "../ecbRates";
 import { EAC, Individual } from './types';
 
 describe('calculator', () => {
