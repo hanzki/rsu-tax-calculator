@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.8.1-beta
+* Improved CSV formatting to avoid timezone errors with dates
+
 ## v0.8.0-beta
 * Added support for calculating sale of ESPP shares
 

@@ -20,6 +20,35 @@ export type ResultsPanelProps = {
 
 const Spacer = () => <Box sx={{m: 1}}/>;
 
+const formatForExport = (sale: TaxSaleOfSecurity) => {
+    return {
+        ...sale,
+        saleDate: format(sale.saleDate, 'yyyy-MM-dd'),
+        purchaseDate: format(sale.purchaseDate, 'yyyy-MM-dd'),
+        account: sale.isESPP ? 'EAC': 'Individual'
+    }
+}
+
+const CSV_EXPORT_COLUMNS: (keyof ReturnType<typeof formatForExport>)[] = [
+    'account',
+    'symbol',
+    'purchaseDate',
+    'saleDate',
+    'quantity',
+    'purchasePriceEUR',
+    'purchaseFeesEUR',
+    'salePriceEUR',
+    'saleFeesEUR',
+    'capitalLossEUR',
+    'capitalGainEUR',
+    'purchasePriceUSD',
+    'purchaseFeesUSD',
+    'salePriceUSD',
+    'saleFeesUSD',
+    'purchaseUSDEURRate',
+    'saleUSDEURRate',
+];
+
 export const ResultsPanel: React.FC<ResultsPanelProps> = ({
     taxReport
 }) => {
@@ -39,7 +68,7 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
 
     const downloadReport = () => {
         const fileHeader = `Created by RSU Tax Calculator v${process.env.REACT_APP_VERSION} on ${format(new Date(), 'PPP')}`;
-        const csvRows = Papa.unparse(salesWithinPeriod, {quotes: true});
+        const csvRows = Papa.unparse(salesWithinPeriod.map(formatForExport), {quotes: true, columns: CSV_EXPORT_COLUMNS});
         const fileContent = `"${fileHeader}"\r\n${csvRows}`;
         const filename = `rsu_sale_report_${period}_${format(new Date(), 'yyyyMMdd')}.csv`;
 
