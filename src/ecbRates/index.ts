@@ -1,4 +1,4 @@
-import { format, isMatch } from "date-fns";
+import { format, isMatch, sub } from "date-fns";
 import { isNumber } from "lodash";
 import * as Papa from 'papaparse';
 
@@ -28,24 +28,37 @@ function validateRate(input: string): number {
 
 export class ECBConverter {
     rates: Map<string,number>;
+    Date = Date;
 
     constructor (rates: Map<string,number>) {
         this.rates = rates;
     }
 
-    usdToEUR(usdValue: number, date: Date = new Date()): number {
+    usdToEUR(usdValue: number, date: Date = new this.Date()): number {
         const rate = this.usdToEURRate(date);
         return usdValue * rate;
     }
 
-    usdToEURRate(date: Date = new Date()): number {
+    usdToEURRate(date: Date = new this.Date()): number {
         const dateKey = format(date, 'yyyy-MM-dd');
 
-        const eurToUSDRate = this.rates.get(dateKey);
-        console.debug(`USD-EUR (${dateKey}): ${eurToUSDRate}`);
+        let eurToUSDRate = this.rates.get(dateKey);
+        console.debug(`EUR-USD (${dateKey}): ${eurToUSDRate}`);
 
         if (!eurToUSDRate) {
-            throw new Error(`No exchange rate for ${dateKey}`);
+            let nlookback = 1;
+            while (!eurToUSDRate && nlookback <= 3) {
+                const previousDate = sub(date, { days: nlookback });
+                const previousDateKey = format(previousDate, 'yyyy-MM-dd');
+                eurToUSDRate = this.rates.get(previousDateKey);
+                if (eurToUSDRate) {
+                    console.debug(`EUR-USD (${dateKey}): undefined, using EUR-USD (${previousDateKey}): ${eurToUSDRate}`);
+                }
+                nlookback++;
+            }
+            if (!eurToUSDRate) {
+                throw new Error(`No exchange rate for ${dateKey}`);
+            }
         }
 
         return 1 / eurToUSDRate;
