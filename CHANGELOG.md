@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.8.2-beta
+* Fixed bug which prevented currency conversions for transactions that happened on weekends
+
 ## v0.8.1-beta
 * Improved CSV formatting to avoid timezone errors with dates
 
