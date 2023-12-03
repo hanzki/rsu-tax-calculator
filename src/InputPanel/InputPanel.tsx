@@ -2,8 +2,8 @@ import { Box, Typography } from "@mui/material"
 import React from "react"
 import { EAC, Individual } from "../calculator/types";
 import { FileUpload, FileUploadProps } from "../FileUpload/FileUpload";
-import { parseEACHistory } from "../parser/schwabEACHistoryParser";
-import { parseIndividualHistory } from "../parser/schwabIndividualHistoryParser";
+import { parseEACHistory } from "../parser/schwabJSONEACHistoryParser";
+import { parseIndividualHistory } from "../parser/schwabJSONIndividualHistoryParser";
 import { CalculateButton } from "./CalculateButton";
 import { ErrorAlert } from "./ErrorAlert";
 import { WarningAlert } from "./WarningAlert";
@@ -69,7 +69,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
     }
 
     const individualUploadProp: FileUploadProps = {
-        accept: 'text/csv',
+        accept: 'application/json',
         inputId: 'individual-upload',
         label: 'Individual History',
         success: !!individualHistory,
@@ -97,9 +97,9 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             }
         }
     }
-      
+
     const eacUploadProp: FileUploadProps = {
-        accept: 'text/csv',
+        accept: 'application/json',
         inputId: 'eac-upload',
         label: 'Equity Award Center History',
         success: !!eacHistory,

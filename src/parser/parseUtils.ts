@@ -1,11 +1,5 @@
 import * as _ from 'lodash';
 
-export function firstLineAndRest(input: string): [string, string] {
-    const lineEndIndex = input.indexOf('\n');
-    const firstLine = input.substring(0, lineEndIndex);
-    const rest = input.substring(lineEndIndex + 1);
-    return [firstLine, rest];
-}
 export function parseDates(dateString: string): Date[] {
     const dateRegex = /\d\d\/\d\d\/\d\d\d\d/g; // MM/DD/YYYY
     const dates = dateString.match(dateRegex);
@@ -19,8 +13,8 @@ export function parseDates(dateString: string): Date[] {
 
     return dates.map(parseDate);
 }
-export function parseQuantity(quantityString: string): number | undefined {
-    if (quantityString === '') return undefined;
+export function parseQuantity(quantityString: string | null): number | undefined {
+    if (quantityString === '' || quantityString === null) return undefined;
 
     const quantity = Number(quantityString.replace(/,/g, ''));
     if (!_.isInteger(quantity)) {
@@ -30,8 +24,8 @@ export function parseQuantity(quantityString: string): number | undefined {
     return quantity;
 }
 
-export function parseUSD(usdString: string): number | undefined {
-    if (usdString === '') return undefined;
+export function parseUSD(usdString: string | null): number | undefined {
+    if (usdString === '' || usdString === null) return undefined;
 
     const usdValue = Number(usdString.replace(/[$,]/g, ''));
     if (!_.isNumber(usdValue)) {

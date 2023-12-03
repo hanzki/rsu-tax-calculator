@@ -1,6 +1,6 @@
 {
   "name": "rsu-tax-calculator",
-  "version": "0.8.2-beta",
+  "version": "0.9.0-beta",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.10.5",
@@ -30,8 +30,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "storybook": "start-storybook -p 6006 -s public",
-    "build-storybook": "build-storybook -s public"
+    "storybook": "storybook dev -p 6006 -s public",
+    "build-storybook": "storybook build -s public"
   },
   "eslintConfig": {
     "extends": [
@@ -62,20 +62,21 @@
     ]
   },
   "devDependencies": {
-    "@storybook/addon-actions": "^6.5.14",
-    "@storybook/addon-essentials": "^6.5.14",
-    "@storybook/addon-interactions": "^6.5.14",
-    "@storybook/addon-links": "^6.5.14",
-    "@storybook/builder-webpack5": "^6.5.14",
-    "@storybook/manager-webpack5": "^6.5.14",
-    "@storybook/node-logger": "^6.5.14",
-    "@storybook/preset-create-react-app": "^4.1.2",
-    "@storybook/react": "^6.5.14",
-    "@storybook/testing-library": "^0.0.13",
+    "@storybook/addon-actions": "^7.6.3",
+    "@storybook/addon-essentials": "^7.6.3",
+    "@storybook/addon-interactions": "^7.6.3",
+    "@storybook/addon-links": "^7.6.3",
+    "@storybook/node-logger": "^7.6.3",
+    "@storybook/preset-create-react-app": "^7.6.3",
+    "@storybook/react": "^7.6.3",
+    "@storybook/react-webpack5": "^7.6.3",
+    "@storybook/testing-library": "^0.2.2",
+    "@types/hast": "^3.0.3",
     "@types/lodash": "^4.14.188",
     "@types/papaparse": "^5.3.5",
     "babel-plugin-named-exports-order": "^0.0.2",
     "prop-types": "^15.8.1",
+    "storybook": "^7.6.3",
     "webpack": "^5.74.0"
   },
   "proxy": "https://sdw-wsrest.ecb.europa.eu"

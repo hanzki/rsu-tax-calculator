@@ -98,6 +98,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             </Box>
             <Typography
                 component="label"
+                htmlFor={inputId}
                 textAlign={'center'}
                 width={`calc(${width} + 1em)`}
                 gutterBottom
