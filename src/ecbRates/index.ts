@@ -43,7 +43,6 @@ export class ECBConverter {
         const dateKey = format(date, 'yyyy-MM-dd');
 
         let eurToUSDRate = this.rates.get(dateKey);
-        console.debug(`EUR-USD (${dateKey}): ${eurToUSDRate}`);
 
         if (!eurToUSDRate) {
             let nlookback = 1;
