@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.9.0-beta
+* Rewrote the file parsing to work off the new Schwab JSON exports instead of CSV files
+
 ## v0.8.2-beta
 * Fixed bug which prevented currency conversions for transactions that happened on weekends
 
