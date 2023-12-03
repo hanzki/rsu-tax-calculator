@@ -1,4 +1,3 @@
-import * as _ from 'lodash';
 import { parseDates, parseQuantity, parseSymbol, parseUSD } from './parseUtils';
 import { Individual } from '../calculator/types';
 

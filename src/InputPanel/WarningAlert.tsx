@@ -10,7 +10,7 @@ export const WarningAlert: React.FC<WarningAlertProps> = ({
     warnings = [],
     display
 }) => {
-    const warningItems = warnings.map(warningMessage => <Typography><PriorityHighIcon fontSize="inherit" sx={{mr: 0.5}}/>{warningMessage}</Typography>);
+    const warningItems = warnings.map((warningMessage, i) => <Typography key={`warning-${i}`}><PriorityHighIcon fontSize="inherit" sx={{mr: 0.5}}/>{warningMessage}</Typography>);
 
     return <Alert severity="warning" sx={[
         {display: 'none', mb: 2},

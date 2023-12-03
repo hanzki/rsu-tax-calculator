@@ -72,6 +72,7 @@
     "@storybook/preset-create-react-app": "^4.1.2",
     "@storybook/react": "^6.5.14",
     "@storybook/testing-library": "^0.0.13",
+    "@types/hast": "^3.0.3",
     "@types/lodash": "^4.14.188",
     "@types/papaparse": "^5.3.5",
     "babel-plugin-named-exports-order": "^0.0.2",

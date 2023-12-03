@@ -1,11 +1,5 @@
 import * as _ from 'lodash';
 
-export function firstLineAndRest(input: string): [string, string] {
-    const lineEndIndex = input.indexOf('\n');
-    const firstLine = input.substring(0, lineEndIndex);
-    const rest = input.substring(lineEndIndex + 1);
-    return [firstLine, rest];
-}
 export function parseDates(dateString: string): Date[] {
     const dateRegex = /\d\d\/\d\d\/\d\d\d\d/g; // MM/DD/YYYY
     const dates = dateString.match(dateRegex);
