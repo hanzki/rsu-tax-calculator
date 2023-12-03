@@ -89,15 +89,13 @@ export const InstructionsPanel: React.FC<InstructionsPanelProps> = () => {
                 brokerage account and the Equity Award Center account.
             </InstructionStep>
             <InstructionStep index={4}>
-                Make sure the <Emph>Date Range</Emph> selector has <Emph>All</Emph> selected. If you
-                need to change this remember to press the <Emph>Search</Emph> button to update the
-                list.
+                Make sure the <Emph>Date Range</Emph> selector has <Emph>All</Emph> selected. If you 
+                change the Date Range <Emph>you have to press Search</Emph> in order for the list 
+                and the export to update.
             </InstructionStep>
             <InstructionStep index={5}>
-                Press the <Emph>Export</Emph> link at the top right of the page to download
-                a CSV export of the transactions. You will see a security notice which you
-                need to acknowledge. No data you upload to this App is sent outside your
-                browser.
+                Press the <Emph>Export</Emph> link at the top right of the page and 
+                choose <Emph>JSON</Emph> as the export type. This is the only accepted file format.
             </InstructionStep>
             <InstructionStep index={6}>
                 Repeat the steps 3-5 for the second account. You need to export
