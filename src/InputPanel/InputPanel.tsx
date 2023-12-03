@@ -4,6 +4,7 @@ import { EAC, Individual } from "../calculator/types";
 import { FileUpload, FileUploadProps } from "../FileUpload/FileUpload";
 import { parseEACHistory } from "../parser/schwabEACHistoryParser";
 import { parseIndividualHistory } from "../parser/schwabIndividualHistoryParser";
+import { parseIndividualHistory as parseJSONIndividualHistory } from "../parser/schwabJSONIndividualHistoryParser";
 import { CalculateButton } from "./CalculateButton";
 import { ErrorAlert } from "./ErrorAlert";
 import { WarningAlert } from "./WarningAlert";
@@ -97,6 +98,36 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             }
         }
     }
+
+    const JSONIndividualUploadProp: FileUploadProps = {
+        accept: 'application/json',
+        inputId: 'json-individual-upload',
+        label: 'Individual History (JSON)',
+        success: !!individualHistory,
+        error: !!individualHistoryError,
+        onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+            if (
+                event.target.files !== null &&
+                event.target?.files?.length > 0
+            ) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  if(typeof event.target?.result === 'string') {
+                    try {
+                        const data = parseJSONIndividualHistory(event.target?.result);
+                        console.debug('History', data);
+                        setIndividualHistoryError(undefined);
+                        setIndividualHistory(data);
+                    } catch (err: any) {
+                        console.error('Failed to parse inidvidual history.', err);
+                        setIndividualHistoryError(err);
+                    }
+                  }
+                };
+                reader.readAsText(event.target.files[0]);
+            }
+        }
+    }
       
     const eacUploadProp: FileUploadProps = {
         accept: 'text/csv',
@@ -141,6 +172,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             justifyContent: 'center'
         }}>
             <FileUpload {...individualUploadProp}></FileUpload>
+            <FileUpload {...JSONIndividualUploadProp}></FileUpload>
             <Box width={'1em'}></Box>
             <FileUpload {...eacUploadProp}></FileUpload>
         </Box>
