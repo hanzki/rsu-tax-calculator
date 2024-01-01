@@ -4,7 +4,7 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
-console.log(`${import.meta.env.VITE_NAME} ${import.meta.env.VITE_VERSION}`)
+console.log(`${__APP_NAME__} ${__APP_VERSION__}`)
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

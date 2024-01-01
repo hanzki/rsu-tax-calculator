@@ -72,7 +72,7 @@ function App() {
     color='text.secondary'
     underline='hover'
     sx={{whiteSpace: 'nowrap'}}
-  >v{import.meta.env.VITE_VERSION}</Link>
+  >v{__APP_VERSION__}</Link>
 
   return (
     <ThemeProvider theme={theme}>
