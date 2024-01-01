@@ -72,7 +72,7 @@ function App() {
     color='text.secondary'
     underline='hover'
     sx={{whiteSpace: 'nowrap'}}
-  >v{process.env.REACT_APP_VERSION}</Link>
+  >v{import.meta.env.VITE_VERSION}</Link>
 
   return (
     <ThemeProvider theme={theme}>

@@ -67,7 +67,7 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
     const capitalLoss = sumBy(salesWithinPeriod, t => t.capitalLossEUR);
 
     const downloadReport = () => {
-        const fileHeader = `Created by RSU Tax Calculator v${process.env.REACT_APP_VERSION} on ${format(new Date(), 'PPP')}`;
+        const fileHeader = `Created by RSU Tax Calculator v${import.meta.env.VITE_APP_VERSION} on ${format(new Date(), 'PPP')}`;
         const csvRows = Papa.unparse(salesWithinPeriod.map(formatForExport), {quotes: true, columns: CSV_EXPORT_COLUMNS});
         const fileContent = `"${fileHeader}"\r\n${csvRows}`;
         const filename = `rsu_sale_report_${period}_${format(new Date(), 'yyyyMMdd')}.csv`;

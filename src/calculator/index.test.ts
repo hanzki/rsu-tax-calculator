@@ -1,3 +1,4 @@
+import { expect, describe, beforeEach, it } from 'vitest'
 import { EACHistoryData, IndividualHistoryData } from '../test/data';
 import * as Calculator from './index';
 import { EAC, Individual } from './types';

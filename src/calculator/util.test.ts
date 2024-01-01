@@ -1,3 +1,4 @@
+import { expect, describe, it } from 'vitest'
 import * as Calculator from './index';
 import { ForfeitureEvent, LotMatch, matchLots } from './util';
 
