@@ -23,6 +23,14 @@ const Spacer = () => <Box sx={{m: 1}}/>;
 const formatForExport = (sale: TaxSaleOfSecurity) => {
     return {
         ...sale,
+        purchasePriceEUR: sale.purchasePriceEUR.toFixed(2),
+        purchaseFeesEUR: sale.purchaseFeesEUR.toFixed(2),
+        salePriceEUR: sale.salePriceEUR.toFixed(2),
+        saleFeesEUR: sale.saleFeesEUR.toFixed(2),
+        capitalLossEUR: sale.capitalLossEUR.toFixed(2),
+        capitalGainEUR: sale.capitalGainEUR.toFixed(2),
+        purchaseUSDEURRate: sale.purchaseUSDEURRate.toFixed(6),
+        saleUSDEURRate: sale.saleUSDEURRate.toFixed(6),
         saleDate: format(sale.saleDate, 'yyyy-MM-dd'),
         purchaseDate: format(sale.purchaseDate, 'yyyy-MM-dd'),
         account: sale.isESPP ? 'EAC': 'Individual'

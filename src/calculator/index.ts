@@ -297,11 +297,25 @@ export function calculateESPPSales(eacHistory: EAC.Transaction[]): ESPPTransacti
         results.push(...esppSaleTransaction.rows.map( detailsRow => ({
             transaction: esppSaleTransaction,
             purchaseDate: detailsRow.purchaseDate,
-            purchasePriceUSD: detailsRow.purchaseFMVUSD,
+            purchasePriceUSD: getCorrectESPPCostBasis(detailsRow.purchaseFMVUSD, detailsRow.purchasePriceUSD),
             quantity: detailsRow.shares,
         })));
         return results;
     }, []);
+}
+
+/**
+ * Calculates the correct cost basis for ESPP sales. Because of Finnish tax law at most 10% discount
+ * of the FMV for ESPP purchases is tax free for earned income, however this "tax free" portion needs to
+ * be deducted from the purchase price in order to calculate the correct cost basis. Thus the 10% discount
+ * is taxed as capital income at the time of sale.
+ * 
+ * @param purchaseFMV FMV at the time of the ESPP purchase
+ * @param purchasePrice price paid for the ESPP shares
+ */
+function getCorrectESPPCostBasis(purchaseFMV: number, purchasePrice: number): number {
+    const maxTaxFreeDiscount = purchaseFMV * 0.1;
+    return Math.max(purchasePrice, purchaseFMV - maxTaxFreeDiscount);
 }
 
 export function calculateTaxes(
