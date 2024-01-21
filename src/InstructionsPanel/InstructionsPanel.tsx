@@ -1,6 +1,6 @@
 import React from "react"
 import { Container } from '@mui/system';
-import { Typography, List, ListItem, ListItemText, ListItemIcon } from '@mui/material';
+import { Typography, List, ListItem, ListItemText, ListItemIcon, Stack } from '@mui/material';
 import Link from '@mui/material/Link';
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
@@ -53,12 +53,19 @@ export const InstructionsPanel: React.FC<InstructionsPanelProps> = () => {
             I made it to help myself and my collegues to navigate their taxes. This tool is not perfect and may contain errors.
             Remember that ultimately you are solely resposible for reporting your taxes correctly.
         </Typography>
-        <Alert severity="warning">
-            <AlertTitle sx={{fontWeight: 'bold'}}>Warning</AlertTitle>
-            This tool is still in <strong>Beta testing.</strong> There is a high likelyhood that there are bugs and
-            the numbers produced by this tool are incorrect for you. Use this tool in your tax
-            reporting at your own risk.<br/>If you find bugs please report them to the author or <GithubIssueLink>submit an issue on Github</GithubIssueLink>.
-        </Alert>
+        <Stack spacing={2} sx={{ width: '100%' }}>
+            <Alert severity="warning">
+                <AlertTitle sx={{fontWeight: 'bold'}}>Warning</AlertTitle>
+                This tool is still in <strong>Beta testing.</strong> There is a high likelyhood that there are bugs and
+                the numbers produced by this tool are incorrect for you. Use this tool in your tax
+                reporting at your own risk.<br/>If you find bugs please report them to the author or <GithubIssueLink>submit an issue on Github</GithubIssueLink>.
+            </Alert>
+            <Alert severity="info">
+                <AlertTitle sx={{fontWeight: 'bold'}}>New Features</AlertTitle>
+                <strong>0.10.x</strong> - The calculator is now discounting 10% from ESPP sale price to match the 10% discount to earned income tax for ESPP purchases.<br/>
+                <strong>0.9.x</strong> - The calculator now uses the new JSON history export files from Schwab.<br/>
+            </Alert>
+        </Stack>
         <Container maxWidth="sm">
             <List>
                 <HighlightsListItem icon={<LanguageIcon/>}>

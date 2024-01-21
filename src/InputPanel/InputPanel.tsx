@@ -37,9 +37,6 @@ export const InputPanel: React.FC<InputPanelProps> = ({
     if (individualHistory && individualHistory.some(t => t.action === Individual.Action.CancelSell)) {
         warnings.push('The Cancel Sell transaction is currently ignored.')
     }
-    if (eacHistory && eacHistory.some(t => t.action === EAC.Action.Sale)) {
-        warnings.push('The ESPP purchase price is not considering the 10% tax free discount in Finland')
-    }
     if (individualHistory && individualHistory.some(t => t.action === Individual.Action.Sell)) {
         warnings.push('The sales fee when selling shares might get double counted.')
     }

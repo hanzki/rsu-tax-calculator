@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.10.0-beta
+* Changed ESPP cost basis calculator logic to correctly discount the Finnish 10% tax free portion. This effectively lowers the cost basis resulting in higher capital gain numbers
+* Added number formatting in the CSV export limiting the number of decimal places in the output file
+
 ## v0.9.0-beta
 * Rewrote the file parsing to work off the new Schwab JSON exports instead of CSV files
 
