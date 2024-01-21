@@ -21,7 +21,6 @@ export type ResultsPanelProps = {
 const Spacer = () => <Box sx={{m: 1}}/>;
 
 const formatForExport = (sale: TaxSaleOfSecurity) => {
-    console.log('exporting');
     return {
         ...sale,
         purchasePriceEUR: sale.purchasePriceEUR.toFixed(2),
