@@ -125,6 +125,7 @@ export namespace Individual {
 export namespace EAC {
     export enum Action {
         Deposit = 'Deposit',
+        ExerciseAndHold = 'Exercise and Hold',
         ExerciseAndSell = 'Exercise and Sell',
         Lapse = 'Lapse',
         Sale = 'Sale',
@@ -150,6 +151,14 @@ export namespace EAC {
     });
     export type DepositTransaction = Static<typeof DepositTransaction>;
 
+    const ExerciseAndHoldRow = Record({
+        awardID: String,
+        sharesExercised: Number,
+        awardPriceUSD: Number,
+        awardType: String,
+        awardDate: InstanceOf(Date),
+    });
+
     const ExerciseAndSellRow = Record({
         awardID: String,
         sharesExercised: Number,
@@ -161,9 +170,22 @@ export namespace EAC {
 
     const OptionsDetails = Record({
         exerciseCostUSD: Number,
-        grossProceedsUSD: Number,
-        netProceedsUSD: Number,
+        grossProceedsUSD: Number.optional(),
+        netProceedsUSD: Number.optional(),
     });
+
+    const ExerciseAndHoldTransaction = Record({
+        action: Literal(Action.ExerciseAndHold),
+        date: InstanceOf(Date),
+        symbol: String,
+        description: String,
+        quantity: Number,
+        feesUSD: Number.optional(),
+        amountUSD: Number.optional(),
+        rows: Array(ExerciseAndHoldRow),
+        details: OptionsDetails
+    });
+    export type ExerciseAndHoldTransaction = Static<typeof ExerciseAndHoldTransaction>;
 
     const ExerciseAndSellTransaction = Record({
         action: Literal(Action.ExerciseAndSell),
@@ -274,6 +296,7 @@ export namespace EAC {
     export const Transaction = Union(
         DepositTransaction,
         ExerciseAndSellTransaction,
+        ExerciseAndHoldTransaction,
         LapseTransaction,
         SaleTransaction,
         SellToCoverTransaction,
