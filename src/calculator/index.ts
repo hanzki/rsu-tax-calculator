@@ -187,9 +187,9 @@ export function buildLots(stockTransactions: StockTransaction[], eacHistory: EAC
         else if (sellToCoverTransaction !== undefined) {
             lots.push({
                 symbol: spaTransaction.symbol,
-                quantity: spaTransaction.quantity,
+                quantity: sellToCoverTransaction.rows.find(isSellToCoverHoldRow)?.sharesExercised || spaTransaction.quantity,
                 purchaseDate: sellToCoverTransaction.date,
-                purchasePriceUSD: 35, //sellToCoverTransaction.rows.find(isSellToCoverHoldRow)?.awardPriceUSD || 0, // TODO: This is probably not the correct purchase price. We should use the FMV price instead.
+                purchasePriceUSD: sellToCoverTransaction.rows.find(isSellToCoverSellRow)?.salePriceUSD || 0,
             })
         }
         else if (holdTransaction !== undefined) {
@@ -197,7 +197,7 @@ export function buildLots(stockTransactions: StockTransaction[], eacHistory: EAC
                 symbol: spaTransaction.symbol,
                 quantity: spaTransaction.quantity,
                 purchaseDate: holdTransaction.date,
-                purchasePriceUSD: 35, // TODO: This is probably not the correct purchase price. We should use the FMV price instead.
+                purchasePriceUSD: 0, // TODO: This is a missing value. We should find the FMV price instead.
             })
         }
         else {

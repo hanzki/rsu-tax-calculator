@@ -158,6 +158,7 @@ export namespace EAC {
         awardType: String,
         awardDate: InstanceOf(Date),
     });
+    export type ExerciseAndHoldRow = Static<typeof ExerciseAndHoldRow>;
 
     const ExerciseAndSellRow = Record({
         awardID: String,
