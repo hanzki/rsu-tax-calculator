@@ -39,42 +39,23 @@ const FIELD_LAPSE_AWARD_SHARES_DEPOSITED = 'NetSharesDeposited';
 const FIELD_LAPSE_AWARD_TOTAL_TAX = 'Taxes';
 
 // TODO: Add JSON parsing for options transactions
-/*
 // "","Award ID","Shares Exercised","Award Price","Sale Price","Award Type","Award Date",
-const FIELD_EXERCISE_AND_SELL_AWARD_ID = 'Award ID';
-const FIELD_EXERCISE_AND_SELL_SHARES_EXERCISED = 'Shares Exercised';
-const FIELD_EXERCISE_AND_SELL_AWARD_PRICE = 'Award Price';
-const FIELD_EXERCISE_AND_SELL_SALE_PRICE = 'Sale Price';
-const FIELD_EXERCISE_AND_SELL_AWARD_TYPE = 'Award Type';
-const FIELD_EXERCISE_AND_SELL_AWARD_DATE = 'Award Date';
-
-// "","Award ID","Shares Exercised","Award Price","Award Type","Award Date",
-const EXERCISE_AND_HOLD_ROW_HEADER = [
-    FIELD_EMPTY,
-    FIELD_EXERCISE_AND_SELL_AWARD_ID,
-    FIELD_EXERCISE_AND_SELL_SHARES_EXERCISED,
-    FIELD_EXERCISE_AND_SELL_AWARD_PRICE,
-    FIELD_EXERCISE_AND_SELL_AWARD_TYPE,
-    FIELD_EXERCISE_AND_SELL_AWARD_DATE,
-    FIELD_EMPTY,
-];
-
-
-// "","Exercise Cost","Taxes","Gross Proceeds","Net Proceeds",
-const FIELD_OPTIONS_DETAILS_EXERCISE_COST = 'Exercise Cost';
-const FIELD_OPTIONS_DETAILS_TAXES = 'Taxes';
-const FIELD_OPTIONS_DETAILS_GROSS_PROCEEDS = 'Gross Proceeds';
-const FIELD_OPTIONS_DETAILS_NET_PROCEEDS = 'Net Proceeds';
+const FIELD_EXERCISE_AND_SELL_AWARD_ID = 'AwardId';
+const FIELD_EXERCISE_AND_SELL_SHARES_EXERCISED = 'SharesExercised';
+const FIELD_EXERCISE_AND_SELL_AWARD_PRICE = 'AwardPrice';
+const FIELD_EXERCISE_AND_SELL_SALE_PRICE = 'SalePrice';
+const FIELD_EXERCISE_AND_SELL_AWARD_TYPE = 'AwardType';
+const FIELD_EXERCISE_AND_SELL_AWARD_DATE = 'AwardDate';
 
 // "","Award Id","Action","Shares Exercised","Award Price","Sale Price","Award Type","Award Date",
-const FIELD_SELL_TO_COVER_AWARD_ID = 'Award Id';
+const FIELD_SELL_TO_COVER_AWARD_ID = 'AwardId';
 const FIELD_SELL_TO_COVER_ACTION = 'Action';
-const FIELD_SELL_TO_COVER_SHARES_EXERCISED = 'Shares Exercised';
-const FIELD_SELL_TO_COVER_AWARD_PRICE = 'Award Price';
-const FIELD_SELL_TO_COVER_SALE_PRICE = 'Sale Price';
-const FIELD_SELL_TO_COVER_AWARD_TYPE = 'Award Type';
-const FIELD_SELL_TO_COVER_AWARD_DATE = 'Award Date';
-*/
+const FIELD_SELL_TO_COVER_SHARES_EXERCISED = 'SharesExercised';
+const FIELD_SELL_TO_COVER_AWARD_PRICE = 'AwardPrice';
+const FIELD_SELL_TO_COVER_SALE_PRICE = 'SalePrice';
+const FIELD_SELL_TO_COVER_AWARD_TYPE = 'AwardType';
+const FIELD_SELL_TO_COVER_AWARD_DATE = 'AwardDate';
+
 
 function parseAction(data: string): EAC.Action {
     if (Object.values(EAC.Action).includes(data as EAC.Action)) {
@@ -153,16 +134,10 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
             eacTransaction.lapseDetails = lapseDetails;
         }
 
-        // TODO: Add JSON parsing for options transactions
-        /*
         if (eacTransaction.action === EAC.Action.ExerciseAndSell) {
-            if (!_.isEqual(parsed.data[i+1], EXERCISE_AND_SELL_ROW_HEADER)) {
-                throwParsingError(parsed.data[i+1], EXERCISE_AND_SELL_ROW_HEADER);
-            }
-            // Read 1-N exercise and sell rows
             const exerciseAndSellRows = [];
-            while (_.isEqual(parsed.data[i+1], EXERCISE_AND_SELL_ROW_HEADER)) {
-                const exerciseAndSellRowLine = readLine(parsed.data[i+2], EXERCISE_AND_SELL_ROW_HEADER);
+            for (let exerciseAndSellRowLineItem of line.TransactionDetails) {
+                const exerciseAndSellRowLine = exerciseAndSellRowLineItem.Details;
                 const exerciseAndSellRow = {
                     awardID: exerciseAndSellRowLine[FIELD_EXERCISE_AND_SELL_AWARD_ID],
                     sharesExercised: parseQuantity(exerciseAndSellRowLine[FIELD_EXERCISE_AND_SELL_SHARES_EXERCISED]),
@@ -172,32 +147,22 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
                     awardDate: parseDates(exerciseAndSellRowLine[FIELD_EXERCISE_AND_SELL_AWARD_DATE])[0],
                 }
                 exerciseAndSellRows.push(exerciseAndSellRow);
-                i = i+2;
             }
             eacTransaction.rows = exerciseAndSellRows;
 
-            // Read 1 summary line
-            if (!_.isEqual(parsed.data[i+1], OPTIONS_DETAILS_HEADER)) {
-                throwParsingError(parsed.data[i+1], OPTIONS_DETAILS_HEADER);
-            }
-            const optionsDetailsLine = readLine(parsed.data[i+2], OPTIONS_DETAILS_HEADER);
+            const optionsDetailsLine = line.OptionExerciseSummary.Details;
             const optionsDetails = {
-                exerciseCostUSD: parseUSD(optionsDetailsLine[FIELD_OPTIONS_DETAILS_EXERCISE_COST]),
-                grossProceedsUSD: parseUSD(optionsDetailsLine[FIELD_OPTIONS_DETAILS_GROSS_PROCEEDS]),
-                netProceedsUSD: parseUSD(optionsDetailsLine[FIELD_OPTIONS_DETAILS_NET_PROCEEDS]),
+                exerciseCostUSD: parseUSD(optionsDetailsLine.ExerciseCost),
+                grossProceedsUSD: parseUSD(optionsDetailsLine.GrossProceeds),
+                netProceedsUSD: parseUSD(optionsDetailsLine.NetProceeds),
             }
             eacTransaction.details = optionsDetails;
-            i = i+2;
         }
 
         if (eacTransaction.action === EAC.Action.ExerciseAndHold) {
-            if (!_.isEqual(parsed.data[i+1], EXERCISE_AND_HOLD_ROW_HEADER)) {
-                throwParsingError(parsed.data[i+1], EXERCISE_AND_HOLD_ROW_HEADER);
-            }
-            // Read 1-N exercise and hold rows
             const exerciseAndHoldRows = [];
-            while (_.isEqual(parsed.data[i+1], EXERCISE_AND_HOLD_ROW_HEADER)) {
-                const exerciseAndHoldRowLine = readLine(parsed.data[i+2], EXERCISE_AND_HOLD_ROW_HEADER);
+            for (let exerciseAndHoldRowLineItem of line.TransactionDetails) {
+                const exerciseAndHoldRowLine = exerciseAndHoldRowLineItem.Details;
                 const exerciseAndHoldRow = {
                     awardID: exerciseAndHoldRowLine[FIELD_EXERCISE_AND_SELL_AWARD_ID],
                     sharesExercised: parseQuantity(exerciseAndHoldRowLine[FIELD_EXERCISE_AND_SELL_SHARES_EXERCISED]),
@@ -206,30 +171,21 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
                     awardDate: parseDates(exerciseAndHoldRowLine[FIELD_EXERCISE_AND_SELL_AWARD_DATE])[0],
                 }
                 exerciseAndHoldRows.push(exerciseAndHoldRow);
-                i = i+2;
             }
             eacTransaction.rows = exerciseAndHoldRows;
 
-            // Read 1 summary line
-            if (!_.isEqual(parsed.data[i+1], OPTIONS_DETAILS_HEADER)) {
-                throwParsingError(parsed.data[i+1], OPTIONS_DETAILS_HEADER);
-            }
-            const optionsDetailsLine = readLine(parsed.data[i+2], OPTIONS_DETAILS_HEADER);
+            const optionsDetailsLine = line.OptionExerciseSummary.Details;
             const optionsDetails = {
-                exerciseCostUSD: parseUSD(optionsDetailsLine[FIELD_OPTIONS_DETAILS_EXERCISE_COST]),
+                exerciseCostUSD: parseUSD(optionsDetailsLine.ExerciseCost),
             }
+
             eacTransaction.details = optionsDetails;
-            i = i+2;
         }
 
         if (eacTransaction.action === EAC.Action.SellToCover) {
-            if (!_.isEqual(parsed.data[i+1], SELL_TO_COVER_ROW_HEADER)) {
-                throwParsingError(parsed.data[i+1], SELL_TO_COVER_ROW_HEADER);
-            }
-            // Read 1-N sell to cover rows
             const sellToCoverRows = [];
-            while (_.isEqual(parsed.data[i+1], SELL_TO_COVER_ROW_HEADER)) {
-                const sellToCoverRowLine = readLine(parsed.data[i+2], SELL_TO_COVER_ROW_HEADER);
+            for (let sellToCoverRowLineItem of line.TransactionDetails) {
+                const sellToCoverRowLine = sellToCoverRowLineItem.Details;
                 const sellToCoverRow = {
                     awardID: sellToCoverRowLine[FIELD_SELL_TO_COVER_AWARD_ID],
                     action: sellToCoverRowLine[FIELD_SELL_TO_COVER_ACTION],
@@ -240,24 +196,18 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
                     awardDate: parseDates(sellToCoverRowLine[FIELD_SELL_TO_COVER_AWARD_DATE])[0],
                 }
                 sellToCoverRows.push(sellToCoverRow);
-                i = i+2;
             }
             eacTransaction.rows = sellToCoverRows;
 
-            // Read 1 summary line
-            if (!_.isEqual(parsed.data[i+1], OPTIONS_DETAILS_HEADER)) {
-                throwParsingError(parsed.data[i+1], OPTIONS_DETAILS_HEADER);
-            }
-            const optionsDetailsLine = readLine(parsed.data[i+2], OPTIONS_DETAILS_HEADER);
+            const optionsDetailsLine = line.OptionExerciseSummary.Details;
             const optionsDetails = {
-                exerciseCostUSD: parseUSD(optionsDetailsLine[FIELD_OPTIONS_DETAILS_EXERCISE_COST]),
-                grossProceedsUSD: parseUSD(optionsDetailsLine[FIELD_OPTIONS_DETAILS_GROSS_PROCEEDS]),
-                netProceedsUSD: parseUSD(optionsDetailsLine[FIELD_OPTIONS_DETAILS_NET_PROCEEDS]),
+                exerciseCostUSD: parseUSD(optionsDetailsLine.ExerciseCost),
+                grossProceedsUSD: parseUSD(optionsDetailsLine.GrossProceeds),
+                netProceedsUSD: parseUSD(optionsDetailsLine.NetProceeds),
             }
+
             eacTransaction.details = optionsDetails;
-            i = i+2;
         }
-        */
 
         history.push(EAC.Transaction.check(eacTransaction));
     }
