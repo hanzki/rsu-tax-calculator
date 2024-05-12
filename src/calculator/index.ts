@@ -37,6 +37,7 @@ const isStockTransaction = (t: Individual.Transaction): t is StockTransaction =>
 type OptionSaleTransaction = EAC.ExerciseAndSellTransaction | EAC.SellToCoverTransaction;
 
 const isLapseTransaction = (t: EAC.Transaction): t is EAC.LapseTransaction => t.action === EAC.Action.Lapse;
+const isHoldTransaction = (t: EAC.Transaction): t is EAC.ExerciseAndHoldTransaction => t.action === EAC.Action.ExerciseAndHold;
 const isExerciseAndSellTransaction = (t: EAC.Transaction): t is EAC.ExerciseAndSellTransaction => t.action === EAC.Action.ExerciseAndSell;
 const isSellToCoverTransaction = (t: EAC.Transaction): t is EAC.SellToCoverTransaction => t.action === EAC.Action.SellToCover;
 const isSaleTransaction = (t: EAC.Transaction): t is EAC.SaleTransaction => t.action === EAC.Action.Sale;
@@ -173,6 +174,7 @@ export function buildLots(stockTransactions: StockTransaction[], eacHistory: EAC
     const lots: Lot[] = [];
     for (const spaTransaction of spaTransactions) {
         const lapseTransaction = findLapseTransaction(spaTransaction, eacHistory);
+        const holdTransaction = findHoldTransaction(spaTransaction, eacHistory);
         const sellToCoverTransaction = findSellToCoverTransaction(spaTransaction, eacHistory);
         if (lapseTransaction !== undefined) {
             lots.push({
@@ -185,13 +187,21 @@ export function buildLots(stockTransactions: StockTransaction[], eacHistory: EAC
         else if (sellToCoverTransaction !== undefined) {
             lots.push({
                 symbol: spaTransaction.symbol,
-                quantity: spaTransaction.quantity,
+                quantity: sellToCoverTransaction.rows.find(isSellToCoverHoldRow)?.sharesExercised || spaTransaction.quantity,
                 purchaseDate: sellToCoverTransaction.date,
-                purchasePriceUSD: sellToCoverTransaction.rows.find(isSellToCoverHoldRow)?.awardPriceUSD || 0, // TODO: This is probably not the correct purchase price. We should use the FMV price instead.
+                purchasePriceUSD: sellToCoverTransaction.rows.find(isSellToCoverSellRow)?.salePriceUSD || 0,
+            })
+        }
+        else if (holdTransaction !== undefined) {
+            lots.push({
+                symbol: spaTransaction.symbol,
+                quantity: spaTransaction.quantity,
+                purchaseDate: holdTransaction.date,
+                purchasePriceUSD: 0, // TODO: This is a missing value. We should find the FMV price instead.
             })
         }
         else {
-            throw new Error('Could not match Stock Plan Activity to Lapse or Sell To Cover transaction');
+            throw new Error('Could not match Stock Plan Activity to Lapse, Hold or Sell To Cover transaction' + JSON.stringify(spaTransaction));
         }
 
     }
@@ -228,6 +238,19 @@ function findLapseTransaction(spaTransaction: Individual.StockPlanActivityTransa
 
     //if (!lapseTransaction) throw new Error('Could not match to lapse');
     return lapseTransaction;
+}
+
+function findHoldTransaction(spaTransaction: Individual.StockPlanActivityTransaction, eacHistory: EAC.Transaction[]): EAC.ExerciseAndHoldTransaction | undefined {
+    const sortedHoldTransactions = eacHistory.filter(isHoldTransaction).sort(sortReverseChronologicalBy(t => t.date));
+    
+    const isBeforeSPA = (holdTransaction: EAC.ExerciseAndHoldTransaction) => isBefore(holdTransaction.date, spaTransaction.date);
+    const quantityMatchesSPA = (holdTransaction: EAC.ExerciseAndHoldTransaction) =>
+        spaTransaction.quantity === holdTransaction.quantity
+
+    const holdTransaction = sortedHoldTransactions.find(ht => isBeforeSPA(ht) && quantityMatchesSPA(ht));
+
+    //if (!holdTransaction) throw new Error('Could not match to lapse');
+    return holdTransaction;
 }
 
 function findSellToCoverTransaction(spaTransaction: Individual.StockPlanActivityTransaction, eacHistory: EAC.Transaction[]): EAC.SellToCoverTransaction | undefined {
