@@ -24,6 +24,14 @@ const newLotMatch = (
 }
 
 describe('Calculator utils', () => {
+    beforeAll(() => {
+        // Mock Date.toLocaleDateString to avoid locale specific date strings
+        const toLocaleDateString = Date.prototype.toLocaleDateString;
+        Date.prototype.toLocaleDateString = function(locale: any = 'en-US', ...args : any[]) {
+          return toLocaleDateString.call(this, locale, ...args);
+        };
+    });
+
     describe('matchLots', () => {
         describe('default cases', () => {
             describe('when given empty inputs', () => {
@@ -50,7 +58,7 @@ describe('Calculator utils', () => {
                     newForfeitureEvent(10, new Date(2023, 3, 1))
                 ];
                 it('throws an error', () => {
-                    expect(() => matchLots(lots, events)).toThrow("Couldn't match sell to a lot");
+                    expect(() => matchLots(lots, events)).toThrow("Couldn't match stock forfeiture event on 4/1/2023 to a lot");
                 })
             })
             describe('when lots are after event date', () => {
@@ -61,7 +69,7 @@ describe('Calculator utils', () => {
                     newForfeitureEvent(10, new Date(2023, 3, 1))
                 ];
                 it('throws an error', () => {
-                    expect(() => matchLots(lots, events)).toThrow("Couldn't match sell to a lot");
+                    expect(() => matchLots(lots, events)).toThrow("Couldn't match stock forfeiture event on 4/1/2023 to a lot");
                 })
             })
             describe('when lots are insuffiencent for all events', () => {
@@ -73,7 +81,7 @@ describe('Calculator utils', () => {
                     newForfeitureEvent(10, new Date(2023, 3, 5))
                 ];
                 it('throws an error', () => {
-                    expect(() => matchLots(lots, events)).toThrow("Couldn't match sell to a lot");
+                    expect(() => matchLots(lots, events)).toThrow("Couldn't match stock forfeiture event on 4/5/2023 to a lot");
                 })
             })
         })
