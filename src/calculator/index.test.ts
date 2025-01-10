@@ -281,6 +281,12 @@ describe('calculator', () => {
             let stockTransactions: Calculator.StockTransaction[];
             let lots: Calculator.Lot[];
             beforeEach(() => {
+                // Mock Date.toLocaleDateString to avoid locale specific date strings
+                const toLocaleDateString = Date.prototype.toLocaleDateString;
+                Date.prototype.toLocaleDateString = function(locale: any = 'en-US', ...args : any[]) {
+                    return toLocaleDateString.call(this, locale, ...args);
+                };
+
                 stockTransactions = [
                     IndividualHistoryData.sellTransaction({date: new Date(2021, 9, 30), quantity: 80, priceUSD: 56}),
                     IndividualHistoryData.sellTransaction({date: new Date(2021, 8, 25), quantity: 42, priceUSD: 80}),
@@ -292,7 +298,7 @@ describe('calculator', () => {
             });
 
             it('throws an error', () => {
-                expect(() => Calculator.calculateCostBases(stockTransactions, lots)).toThrow(Error("Couldn't match sell to a lot"));
+                expect(() => Calculator.calculateCostBases(stockTransactions, lots)).toThrow(Error("Couldn't match stock forfeiture event on 10/30/2021 to a lot"));
             });
         });
 
