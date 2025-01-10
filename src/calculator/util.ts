@@ -33,7 +33,11 @@ export function matchLots<E extends ForfeitureEvent>(lots: Lot[], forfeitureEven
 
     const results: LotMatch<E>[] = []
 
-    const throwMissingLotError = () => { throw new Error("Couldn't match sell to a lot"); };
+    const throwMissingLotError = (event: E) => {
+        console.debug("Unmatched forfeiture event", event);
+        const forfeitureDate = event.date.toLocaleDateString();
+        throw new Error(`Couldn't match stock forfeiture event on ${forfeitureDate} to a lot`);
+    };
     const currentLotIsValid = (evet: E) => currentLot && currentLot.purchaseDate <= evet.date;
 
     const findMatch = (
@@ -42,7 +46,7 @@ export function matchLots<E extends ForfeitureEvent>(lots: Lot[], forfeitureEven
         sharesMatchedFromLot: number,
         sharesMatchedFromEvent: number
     ): LotMatch<E> => {
-        if (!currentLotIsValid(event)) throwMissingLotError();
+        if (!currentLotIsValid(event)) throwMissingLotError(event);
         const lotSharesLeft = currentLot.quantity - sharesMatchedFromLot;
         const eventSharesLeft = event.quantity - sharesMatchedFromEvent;
         const quantity = Math.min(lotSharesLeft, eventSharesLeft);
