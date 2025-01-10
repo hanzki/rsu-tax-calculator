@@ -191,7 +191,9 @@ export function buildLots(stockTransactions: StockTransaction[], eacHistory: EAC
             })
         }
         else {
-            throw new Error('Could not match Stock Plan Activity to Lapse or Sell To Cover transaction');
+            console.debug("Unmatched spaTransaction", spaTransaction);
+            const transactionDate = spaTransaction.date.toLocaleDateString();
+            throw new Error(`Could not match Stock Plan Activity on ${transactionDate} to Lapse or Sell To Cover transaction`);
         }
 
     }
@@ -219,12 +221,12 @@ export function buildLots(stockTransactions: StockTransaction[], eacHistory: EAC
 function findLapseTransaction(spaTransaction: Individual.StockPlanActivityTransaction, eacHistory: EAC.Transaction[]): EAC.LapseTransaction | undefined {
     const sortedLapseTransactions = eacHistory.filter(isLapseTransaction).sort(sortReverseChronologicalBy(t => t.date));
     
-    const isBeforeSPA = (lapseTransaction: EAC.LapseTransaction) => isBefore(lapseTransaction.date, spaTransaction.date);
+    const isBeforeOrEqualSPA = (lapseTransaction: EAC.LapseTransaction) => isBefore(lapseTransaction.date, spaTransaction.date) || isEqual(lapseTransaction.date, spaTransaction.date);
     const quantityMatchesSPA = (lapseTransaction: EAC.LapseTransaction) =>
         spaTransaction.quantity === lapseTransaction.lapseDetails.sharesDeposited
         || spaTransaction.quantity === lapseTransaction.lapseDetails.sharesSold
 
-    const lapseTransaction = sortedLapseTransactions.find(lt => isBeforeSPA(lt) && quantityMatchesSPA(lt));
+    const lapseTransaction = sortedLapseTransactions.find(lt => isBeforeOrEqualSPA(lt) && quantityMatchesSPA(lt));
 
     //if (!lapseTransaction) throw new Error('Could not match to lapse');
     return lapseTransaction;

@@ -60,8 +60,15 @@ export const InstructionsPanel: React.FC<InstructionsPanelProps> = () => {
                 the numbers produced by this tool are incorrect for you. Use this tool in your tax
                 reporting at your own risk.<br/>If you find bugs please report them to the author or <GithubIssueLink>submit an issue on Github</GithubIssueLink>.
             </Alert>
+            <Alert severity="warning">
+                <AlertTitle sx={{fontWeight: 'bold'}}>Warning</AlertTitle>
+                Schwab web bank only allows you to export up to 4 years of historical transactions. Due to this tool currently
+                requiring the full account history you might not be able to use this tool in its current form if you have joined
+                Unity before 2021. Stay tuned for a new version that will work with the available data.
+            </Alert>
             <Alert severity="info">
                 <AlertTitle sx={{fontWeight: 'bold'}}>New Features</AlertTitle>
+                <strong>0.11.x</strong> - The calculator now supports new transaction types added in 2024.<br/>
                 <strong>0.10.x</strong> - The calculator is now discounting 10% from ESPP sale price to match the 10% discount to earned income tax for ESPP purchases.<br/>
                 <strong>0.9.x</strong> - The calculator now uses the new JSON history export files from Schwab.<br/>
             </Alert>

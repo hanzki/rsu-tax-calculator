@@ -141,6 +141,27 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
             eacTransaction.lapseDetails = lapseDetails;
         }
 
+        if (eacTransaction.action === EAC.Action.ForcedQuickSell) {
+            // Read 1-N sale details rows
+            const forcedQuickSellDetailsRows = [];
+            for (let detailsRowLine of line.TransactionDetails) {
+                detailsRowLine = detailsRowLine.Details;
+                const saleDetailsRow = {
+                    type: detailsRowLine[FIELD_SALE_TYPE],
+                    shares: parseQuantity(detailsRowLine[FIELD_SALE_SHARES]),
+                    salePriceUSD: parseUSD(detailsRowLine[FIELD_SALE_SALE_PRICE]),
+                    subscriptionDate: parseDates(detailsRowLine[FIELD_SALE_SUBSCRIPTION_DATE])[0],
+                    subscriptionFMVUSD: parseUSD(detailsRowLine[FIELD_SALE_SUBSCRIPTION_FMV]),
+                    purchaseDate: parseDates(detailsRowLine[FIELD_SALE_PURCHASE_DATE])[0],
+                    purchasePriceUSD: parseUSD(detailsRowLine[FIELD_SALE_PURCHASE_PRICE]),
+                    purchaseFMVUSD: parseUSD(detailsRowLine[FIELD_SALE_PURCHASE_FMV]),
+                    grossProceedsUSD: parseUSD(detailsRowLine[FIELD_SALE_GROSS_PROCEEDS]),
+                }
+                forcedQuickSellDetailsRows.push(saleDetailsRow);
+            }
+            eacTransaction.rows = forcedQuickSellDetailsRows;
+        }
+
         // TODO: Add JSON parsing for options transactions
         /*
         if (eacTransaction.action === EAC.Action.ExerciseAndSell) {

@@ -1,4 +1,5 @@
 import { Number, String, Literal, Record, Union, InstanceOf, Static, Array } from 'runtypes';
+import { c } from 'vite/dist/node/types.d-aGj9QkWt';
 
 export namespace Individual {
     export enum Action {
@@ -130,6 +131,8 @@ export namespace EAC {
         Sale = 'Sale',
         SellToCover = 'Sell to Cover',
         WireTransfer = 'Wire Transfer',
+        ForcedDisbursement = 'Forced Disbursement',
+        ForcedQuickSell = 'Forced Quick Sell',
     }
 
     const DepositDetails = Record({
@@ -266,10 +269,44 @@ export namespace EAC {
         date: InstanceOf(Date),
         symbol: String,
         description: String,
-        feesUSD: Number,
+        feesUSD: Number.optional(),
         amountUSD: Number,
     });
     export type WireTransferTransaction = Static<typeof WireTransferTransaction>;
+
+    const ForcedDisbursementTransaction = Record({
+        action: Literal(Action.ForcedDisbursement),
+        date: InstanceOf(Date),
+        symbol: String,
+        description: String,
+        amountUSD: Number,
+    });
+    export type ForcedDisbursementTransaction = Static<typeof ForcedDisbursementTransaction>;
+
+    const ForcedQuickSellDetailsRow = Record({
+        type: String,
+        shares: Number,
+        salePriceUSD: Number,
+        subscriptionDate: InstanceOf(Date),
+        subscriptionFMVUSD: Number,
+        purchaseDate: InstanceOf(Date),
+        purchasePriceUSD: Number,
+        purchaseFMVUSD: Number,
+        grossProceedsUSD: Number,  
+    });
+
+    const ForcedQuickSellTransaction = Record({
+        action: Literal(Action.ForcedQuickSell),
+        date: InstanceOf(Date),
+        symbol: String,
+        description: String,
+        quantity: Number,
+        feesUSD: Number,
+        amountUSD: Number,
+        rows: Array(ForcedQuickSellDetailsRow),
+    });
+
+    export type ForcedQuickSellTransaction = Static<typeof ForcedQuickSellTransaction>;
 
     export const Transaction = Union(
         DepositTransaction,
@@ -278,6 +315,8 @@ export namespace EAC {
         SaleTransaction,
         SellToCoverTransaction,
         WireTransferTransaction,
+        ForcedDisbursementTransaction,
+        ForcedQuickSellTransaction,
     );
     export type Transaction = Static<typeof Transaction>;
 }
