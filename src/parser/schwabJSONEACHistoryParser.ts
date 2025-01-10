@@ -94,7 +94,7 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
                 purchasePriceUSD: parseUSD(depositDetailsLine[FIELD_DEPOSIT_PURCHASE_PRICE]),
                 subscriptionDate: parseDates(depositDetailsLine[FIELD_DEPOSIT_SUBSCRIPTION_DATE])[0],
                 subscriptionFMVUSD: parseUSD(depositDetailsLine[FIELD_DEPOSIT_SUBSCRIPTION_FMV]),
-                purchaseFMVUSD: parseUSD(depositDetailsLine[FIELD_DEPOSIT_PURCHASE_FMV]),  
+                purchaseFMVUSD: parseUSD(depositDetailsLine[FIELD_DEPOSIT_PURCHASE_FMV]),
             }
             eacTransaction.depositDetails = depositDetails;
         }
@@ -132,6 +132,27 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
                 totalTaxesUSD: parseUSD(lapseDetailsLine[FIELD_LAPSE_AWARD_TOTAL_TAX]),
             }
             eacTransaction.lapseDetails = lapseDetails;
+        }
+
+        if (eacTransaction.action === EAC.Action.ForcedQuickSell) {
+            // Read 1-N sale details rows
+            const forcedQuickSellDetailsRows = [];
+            for (let detailsRowLine of line.TransactionDetails) {
+                detailsRowLine = detailsRowLine.Details;
+                const saleDetailsRow = {
+                    type: detailsRowLine[FIELD_SALE_TYPE],
+                    shares: parseQuantity(detailsRowLine[FIELD_SALE_SHARES]),
+                    salePriceUSD: parseUSD(detailsRowLine[FIELD_SALE_SALE_PRICE]),
+                    subscriptionDate: parseDates(detailsRowLine[FIELD_SALE_SUBSCRIPTION_DATE])[0],
+                    subscriptionFMVUSD: parseUSD(detailsRowLine[FIELD_SALE_SUBSCRIPTION_FMV]),
+                    purchaseDate: parseDates(detailsRowLine[FIELD_SALE_PURCHASE_DATE])[0],
+                    purchasePriceUSD: parseUSD(detailsRowLine[FIELD_SALE_PURCHASE_PRICE]),
+                    purchaseFMVUSD: parseUSD(detailsRowLine[FIELD_SALE_PURCHASE_FMV]),
+                    grossProceedsUSD: parseUSD(detailsRowLine[FIELD_SALE_GROSS_PROCEEDS]),
+                }
+                forcedQuickSellDetailsRows.push(saleDetailsRow);
+            }
+            eacTransaction.rows = forcedQuickSellDetailsRows;
         }
 
         if (eacTransaction.action === EAC.Action.ExerciseAndSell) {
