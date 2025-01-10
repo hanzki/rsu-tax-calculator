@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.11.0-beta
+* Fixed bug in calculation logic that couldn't match sales if the shares were received on the same day.
+* Added support for new transaction types due to changes in tax processing. (Forced Disbursement and Forced Quick Sell).
+* Added warning about Schawb supporting only 4 years of history.
+
 ## v0.10.0-beta
 * Changed ESPP cost basis calculator logic to correctly discount the Finnish 10% tax free portion. This effectively lowers the cost basis resulting in higher capital gain numbers
 * Added number formatting in the CSV export limiting the number of decimal places in the output file
