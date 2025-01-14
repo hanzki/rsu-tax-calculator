@@ -47,25 +47,6 @@ const FIELD_EXERCISE_AND_SELL_SALE_PRICE = 'SalePrice';
 const FIELD_EXERCISE_AND_SELL_AWARD_TYPE = 'AwardType';
 const FIELD_EXERCISE_AND_SELL_AWARD_DATE = 'AwardDate';
 
-// XXX
-// "","Award ID","Shares Exercised","Award Price","Award Type","Award Date",
-const EXERCISE_AND_HOLD_ROW_HEADER = [
-    FIELD_EMPTY,
-    FIELD_EXERCISE_AND_SELL_AWARD_ID,
-    FIELD_EXERCISE_AND_SELL_SHARES_EXERCISED,
-    FIELD_EXERCISE_AND_SELL_AWARD_PRICE,
-    FIELD_EXERCISE_AND_SELL_AWARD_TYPE,
-    FIELD_EXERCISE_AND_SELL_AWARD_DATE,
-    FIELD_EMPTY,
-];
-
-// "","Exercise Cost","Taxes","Gross Proceeds","Net Proceeds",
-const FIELD_OPTIONS_DETAILS_EXERCISE_COST = 'Exercise Cost';
-const FIELD_OPTIONS_DETAILS_TAXES = 'Taxes';
-const FIELD_OPTIONS_DETAILS_GROSS_PROCEEDS = 'Gross Proceeds';
-const FIELD_OPTIONS_DETAILS_NET_PROCEEDS = 'Net Proceeds';
-// XXX
-
 // "","Award Id","Action","Shares Exercised","Award Price","Sale Price","Award Type","Award Date",
 const FIELD_SELL_TO_COVER_AWARD_ID = 'AwardId';
 const FIELD_SELL_TO_COVER_ACTION = 'Action';
