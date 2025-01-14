@@ -230,7 +230,7 @@ export function buildLots(stockTransactions: StockTransaction[], eacHistory: EAC
  */
 function findLapseTransaction(spaTransaction: Individual.StockPlanActivityTransaction, eacHistory: EAC.Transaction[]): EAC.LapseTransaction | undefined {
     const sortedLapseTransactions = eacHistory.filter(isLapseTransaction).sort(sortReverseChronologicalBy(t => t.date));
-
+  
     const isBeforeOrEqualSPA = (lapseTransaction: EAC.LapseTransaction) => isBefore(lapseTransaction.date, spaTransaction.date) || isEqual(lapseTransaction.date, spaTransaction.date);
     const quantityMatchesSPA = (lapseTransaction: EAC.LapseTransaction) =>
         spaTransaction.quantity === lapseTransaction.lapseDetails.sharesDeposited
