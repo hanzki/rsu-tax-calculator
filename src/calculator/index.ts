@@ -40,6 +40,7 @@ const isLapseTransaction = (t: EAC.Transaction): t is EAC.LapseTransaction => t.
 const isExerciseAndSellTransaction = (t: EAC.Transaction): t is EAC.ExerciseAndSellTransaction => t.action === EAC.Action.ExerciseAndSell;
 const isSellToCoverTransaction = (t: EAC.Transaction): t is EAC.SellToCoverTransaction => t.action === EAC.Action.SellToCover;
 const isSaleTransaction = (t: EAC.Transaction): t is EAC.SaleTransaction => t.action === EAC.Action.Sale;
+const isForcedQuickSellTransaction = (t: EAC.Transaction): t is EAC.SaleTransaction => t.action === EAC.Action.ForcedQuickSell;
 const isOptionSaleTransaction = (t: EAC.Transaction): t is OptionSaleTransaction => isExerciseAndSellTransaction(t) || isSellToCoverTransaction(t);
 
 const isSellToCoverSellRow = (r: EAC.SellToCoverTransaction['rows'][number]): r is EAC.SellToCoverSellRow => r.action === EAC.SellToCoverAction.Sell;
@@ -295,7 +296,9 @@ export type ESPPTransactionWithCostBasis = {
 
 export function calculateESPPSales(eacHistory: EAC.Transaction[]): ESPPTransactionWithCostBasis[] {
     const esppSaleTransactions = eacHistory.filter(isSaleTransaction);
-    return esppSaleTransactions.reduce<ESPPTransactionWithCostBasis[]>((results, esppSaleTransaction) => {
+    const esppForcedQuickSellTransactions = eacHistory.filter(isForcedQuickSellTransaction);
+    const combinedTransactions = [...esppSaleTransactions, ...esppForcedQuickSellTransactions];
+    return combinedTransactions.reduce<ESPPTransactionWithCostBasis[]>((results, esppSaleTransaction) => {
         results.push(...esppSaleTransaction.rows.map( detailsRow => ({
             transaction: esppSaleTransaction,
             purchaseDate: detailsRow.purchaseDate,
