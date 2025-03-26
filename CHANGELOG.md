@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.12.0-beta
+* Added proper reporting of forced quick sale of ESPP shares.
+
 ## v0.11.1-beta
 * Updated references to ECB API to point to ECB's new data portal API.
 
