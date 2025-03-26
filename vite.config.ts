@@ -39,7 +39,7 @@ export default defineConfig({
   server: {
     open: true,
     "proxy": {
-        "/service/data/EXR/D.USD.EUR.SP00.A": "https://sdw-wsrest.ecb.europa.eu"
+        "/service/data/EXR/D.USD.EUR.SP00.A": "https://data-api.ecb.europa.eu"
     }
   }
 });
