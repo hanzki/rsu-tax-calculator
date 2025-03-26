@@ -23,7 +23,7 @@ export const InstructionsPanel: React.FC<InstructionsPanelProps> = () => {
         rel='noreferrer'
     >{props.children}</Link>
     const ECBLink = (props: {children: React.ReactNode}) => <Link 
-        href='https://sdw-wsrest.ecb.europa.eu/help/'
+        href='https://data.ecb.europa.eu/help/api/overview'
         target='_blank'
         rel='noreferrer'
     >{props.children}</Link>

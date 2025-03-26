@@ -92,5 +92,5 @@
     "vitest": "^1.1.1",
     "webpack": "^5.74.0"
   },
-  "proxy": "https://sdw-wsrest.ecb.europa.eu"
+  "proxy": "https://data-api.ecb.europa.eu"
 }
