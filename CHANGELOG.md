@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.11.1-beta
+* Updated references to ECB API to point to ECB's new data portal API.
+
 ## v0.11.0-beta
 * Fixed bug in calculation logic that couldn't match sales if the shares were received on the same day.
 * Added support for new transaction types due to changes in tax processing. (Forced Disbursement and Forced Quick Sell).
