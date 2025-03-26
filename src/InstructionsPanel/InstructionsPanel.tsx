@@ -68,9 +68,9 @@ export const InstructionsPanel: React.FC<InstructionsPanelProps> = () => {
             </Alert>
             <Alert severity="info">
                 <AlertTitle sx={{fontWeight: 'bold'}}>New Features</AlertTitle>
+                <strong>0.12.x</strong> - The calculator now reports correctly forced sale of ESPP shares.<br/>
                 <strong>0.11.x</strong> - The calculator now supports new transaction types added in 2024.<br/>
                 <strong>0.10.x</strong> - The calculator is now discounting 10% from ESPP sale price to match the 10% discount to earned income tax for ESPP purchases.<br/>
-                <strong>0.9.x</strong> - The calculator now uses the new JSON history export files from Schwab.<br/>
             </Alert>
         </Stack>
         <Container maxWidth="sm">
