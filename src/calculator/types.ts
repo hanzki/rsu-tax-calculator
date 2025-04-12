@@ -43,7 +43,7 @@ export namespace Individual {
         amountUSD: Number,
     });
     export type JournalTransaction = Static<typeof JournalTransaction>;
-    
+
     const MiscCashEntryTransaction = Record({
         action: Literal(Action.MiscCashEntry),
         date: InstanceOf(Date),
@@ -59,7 +59,7 @@ export namespace Individual {
         amountUSD: Number,
     });
     export type NRATaxAdjTransaction = Static<typeof NRATaxAdjTransaction>;
-    
+
     const SecurityTransferTransaction = Record({
         action: Literal(Action.SecurityTransfer),
         date: InstanceOf(Date),
@@ -68,7 +68,7 @@ export namespace Individual {
         quantity: Number,
     });
     export type SecurityTransferTransaction = Static<typeof SecurityTransferTransaction>;
-    
+
     const SellTransaction = Record({
         action: Literal(Action.Sell),
         date: InstanceOf(Date),
@@ -81,7 +81,7 @@ export namespace Individual {
         amountUSD: Number,
     });
     export type SellTransaction = Static<typeof SellTransaction>;
-    
+
     const ServiceFeeTransaction = Record({
         action: Literal(Action.ServiceFee),
         date: InstanceOf(Date),
@@ -89,7 +89,7 @@ export namespace Individual {
         amountUSD: Number,
     });
     export type ServiceFeeTransaction = Static<typeof ServiceFeeTransaction>;
-    
+
     const StockPlanActivityTransaction = Record({
         action: Literal(Action.StockPlanActivity),
         date: InstanceOf(Date),
@@ -99,7 +99,7 @@ export namespace Individual {
         asOfDate: InstanceOf(Date).optional(),
     });
     export type StockPlanActivityTransaction = Static<typeof StockPlanActivityTransaction>;
-    
+
     const WireSentTransaction = Record({
         action: Literal(Action.WireSent),
         date: InstanceOf(Date),
@@ -126,6 +126,7 @@ export namespace Individual {
 export namespace EAC {
     export enum Action {
         Deposit = 'Deposit',
+        ExerciseAndHold = 'Exercise and Hold',
         ExerciseAndSell = 'Exercise and Sell',
         Lapse = 'Lapse',
         Sale = 'Sale',
@@ -140,7 +141,7 @@ export namespace EAC {
         purchasePriceUSD: Number,
         subscriptionDate: InstanceOf(Date),
         subscriptionFMVUSD: Number,
-        purchaseFMVUSD: Number,  
+        purchaseFMVUSD: Number,
     });
 
     const DepositTransaction = Record({
@@ -153,6 +154,15 @@ export namespace EAC {
     });
     export type DepositTransaction = Static<typeof DepositTransaction>;
 
+    const ExerciseAndHoldRow = Record({
+        awardID: String,
+        sharesExercised: Number,
+        awardPriceUSD: Number,
+        awardType: String,
+        awardDate: InstanceOf(Date),
+    });
+    export type ExerciseAndHoldRow = Static<typeof ExerciseAndHoldRow>;
+
     const ExerciseAndSellRow = Record({
         awardID: String,
         sharesExercised: Number,
@@ -164,9 +174,22 @@ export namespace EAC {
 
     const OptionsDetails = Record({
         exerciseCostUSD: Number,
-        grossProceedsUSD: Number,
-        netProceedsUSD: Number,
+        grossProceedsUSD: Number.optional(),
+        netProceedsUSD: Number.optional(),
     });
+
+    const ExerciseAndHoldTransaction = Record({
+        action: Literal(Action.ExerciseAndHold),
+        date: InstanceOf(Date),
+        symbol: String,
+        description: String,
+        quantity: Number,
+        feesUSD: Number.optional(),
+        amountUSD: Number.optional(),
+        rows: Array(ExerciseAndHoldRow),
+        details: OptionsDetails
+    });
+    export type ExerciseAndHoldTransaction = Static<typeof ExerciseAndHoldTransaction>;
 
     const ExerciseAndSellTransaction = Record({
         action: Literal(Action.ExerciseAndSell),
@@ -210,7 +233,7 @@ export namespace EAC {
         purchaseDate: InstanceOf(Date),
         purchasePriceUSD: Number,
         purchaseFMVUSD: Number,
-        grossProceedsUSD: Number,  
+        grossProceedsUSD: Number,
     });
 
     const SaleTransaction = Record({
@@ -292,7 +315,7 @@ export namespace EAC {
         purchaseDate: InstanceOf(Date),
         purchasePriceUSD: Number,
         purchaseFMVUSD: Number,
-        grossProceedsUSD: Number,  
+        grossProceedsUSD: Number,
     });
 
     const ForcedQuickSellTransaction = Record({
@@ -311,6 +334,7 @@ export namespace EAC {
     export const Transaction = Union(
         DepositTransaction,
         ExerciseAndSellTransaction,
+        ExerciseAndHoldTransaction,
         LapseTransaction,
         SaleTransaction,
         SellToCoverTransaction,
