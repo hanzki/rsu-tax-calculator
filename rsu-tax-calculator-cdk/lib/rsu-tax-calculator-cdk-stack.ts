@@ -17,7 +17,7 @@ export class RsuTaxCalculatorCdkStack extends cdk.Stack {
     new StaticSite(this, 'StaticSite', {
       domainName: 'huhtanen.eu',
       siteSubDomain: 'tax-calculator',
-      ecbDomain: 'sdw-wsrest.ecb.europa.eu',
+      ecbDomain: 'data-api.ecb.europa.eu',
       ecbPath:'/service/data/EXR/D.USD.EUR.SP00.A',
       ecbParams:['startPeriod', 'format', 'detail'],
       sourcePath: this.node.tryGetContext('sourcePath')
