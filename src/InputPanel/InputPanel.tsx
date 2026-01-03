@@ -7,6 +7,7 @@ import { parseIndividualHistory } from "../parser/schwabJSONIndividualHistoryPar
 import { CalculateButton } from "./CalculateButton";
 import { ErrorAlert } from "./ErrorAlert";
 import { WarningAlert } from "./WarningAlert";
+import { analyzeInputData } from "../calculator/inputAnalyzer";
 
 export type CalculationSettings = {
     individualHistory: Individual.Transaction[],
@@ -125,6 +126,33 @@ export const InputPanel: React.FC<InputPanelProps> = ({
         },
     }
 
+    function inputInformation() {
+        let individualInfo, eacInfo = "Not loaded";
+        if (individualHistory) {
+            const metadata = analyzeInputData(individualHistory);
+            individualInfo = [
+                metadata.firstTransactionDate.toLocaleDateString(),
+                metadata.lastTransactionDate.toLocaleDateString()
+            ].join(" - ");
+        }
+        if (eacHistory) {
+            const metadata = analyzeInputData(eacHistory);
+            eacInfo = [
+                metadata.firstTransactionDate.toLocaleDateString(),
+                metadata.lastTransactionDate.toLocaleDateString()
+            ].join(" - ");
+        }
+
+        return (
+            <Box sx={{ marginTop: '10px', textAlign: 'center' }}>
+            <Typography variant="body2">
+                Individual History:  {individualInfo} <br/>
+                EAC History:  {eacInfo}
+            </Typography>
+            </Box>
+        );
+    }
+
     return <Box sx={{
         padding: '10px',
         display: 'flex',
@@ -141,6 +169,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             <Box width={'1em'}></Box>
             <FileUpload {...eacUploadProp}></FileUpload>
         </Box>
+        {individualHistory || eacHistory ? inputInformation() : null}
         <CalculateButton
             onClick={doCalculate}
             disabled={!readyToCalculate}
