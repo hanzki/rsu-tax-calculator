@@ -328,7 +328,8 @@ function getCorrectESPPCostBasis(purchaseFMV: number, purchasePrice: number): nu
 export function calculateTaxes(
     individualHistory: Individual.Transaction[],
     eacHistory: EAC.Transaction[],
-    ecbConverter: ECBConverter
+    ecbConverter: ECBConverter,
+    earlierLots?: { shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[]
     ): TaxSaleOfSecurity[] {
         // Filter out non-stock transactions
         const stockTransactions = filterStockTransactions(individualHistory);
@@ -336,7 +337,19 @@ export function calculateTaxes(
         const transactionsWithoutOptionSales = filterOutOptionSales(stockTransactions, eacHistory);
 
         // Build list of lots
-        const lots = buildLots(transactionsWithoutOptionSales, eacHistory);
+        let lots = buildLots(transactionsWithoutOptionSales, eacHistory);
+
+        // Prepend any earlier lots provided by the user
+        if (earlierLots && earlierLots.length > 0) {
+            const symbol = lots.length > 0 ? lots[0].symbol : 'UNKNOWN';
+            const userProvidedLots: Lot[] = earlierLots.map(l => ({
+                symbol,
+                quantity: l.shares,
+                purchaseDate: l.acquisitionDate,
+                purchasePriceUSD: l.totalAcquisitionCost / l.shares,
+            }));
+            lots = [...userProvidedLots, ...lots];
+        }
 
         // Calculate correct cost basis
         const transactionsWithCostBasis = calculateCostBases(transactionsWithoutOptionSales, lots);
