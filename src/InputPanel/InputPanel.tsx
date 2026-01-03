@@ -7,11 +7,12 @@ import { parseIndividualHistory } from "../parser/schwabJSONIndividualHistoryPar
 import { CalculateButton } from "./CalculateButton";
 import { ErrorAlert } from "./ErrorAlert";
 import { WarningAlert } from "./WarningAlert";
-import { analyzeInputData } from "../calculator/inputAnalyzer";
+import { AdditionalInformation } from "./AdditionalInput";
 
 export type CalculationSettings = {
     individualHistory: Individual.Transaction[],
     eacHistory: EAC.Transaction[]
+    earlierLots?: { shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[]
 }
 
 export type InputPanelProps = {
@@ -27,6 +28,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
     const [eacHistoryError, setEACHistoryError] = React.useState();
     const [calculating, setCalculating] = React.useState(false);
     const [calculationDone, setCalculationDone] = React.useState(false);
+    const [earlierLots, setEarlierLots] = React.useState<{ shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[]>();
 
     const readyToCalculate = individualHistory && eacHistory;
     const hasErrors = !!individualHistoryError || !!eacHistoryError;
@@ -56,7 +58,8 @@ export const InputPanel: React.FC<InputPanelProps> = ({
         try {
             await onCalculate({
                 individualHistory,
-                eacHistory
+                eacHistory,
+                earlierLots
             });
             setCalculationDone(true);
         } catch (err: any) {
@@ -126,33 +129,6 @@ export const InputPanel: React.FC<InputPanelProps> = ({
         },
     }
 
-    function inputInformation() {
-        let individualInfo, eacInfo = "Not loaded";
-        if (individualHistory) {
-            const metadata = analyzeInputData(individualHistory);
-            individualInfo = [
-                metadata.firstTransactionDate.toLocaleDateString(),
-                metadata.lastTransactionDate.toLocaleDateString()
-            ].join(" - ");
-        }
-        if (eacHistory) {
-            const metadata = analyzeInputData(eacHistory);
-            eacInfo = [
-                metadata.firstTransactionDate.toLocaleDateString(),
-                metadata.lastTransactionDate.toLocaleDateString()
-            ].join(" - ");
-        }
-
-        return (
-            <Box sx={{ marginTop: '10px', textAlign: 'center' }}>
-            <Typography variant="body2">
-                Individual History:  {individualInfo} <br/>
-                EAC History:  {eacInfo}
-            </Typography>
-            </Box>
-        );
-    }
-
     return <Box sx={{
         padding: '10px',
         display: 'flex',
@@ -169,7 +145,11 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             <Box width={'1em'}></Box>
             <FileUpload {...eacUploadProp}></FileUpload>
         </Box>
-        {individualHistory || eacHistory ? inputInformation() : null}
+        {individualHistory || eacHistory ? <AdditionalInformation 
+            individualHistory={individualHistory}
+            eacHistory={eacHistory}
+            onLotsChange={setEarlierLots}
+        /> : null}
         <CalculateButton
             onClick={doCalculate}
             disabled={!readyToCalculate}
