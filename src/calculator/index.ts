@@ -37,6 +37,7 @@ const isStockTransaction = (t: Individual.Transaction): t is StockTransaction =>
 type OptionSaleTransaction = EAC.ExerciseAndSellTransaction | EAC.SellToCoverTransaction;
 
 const isLapseTransaction = (t: EAC.Transaction): t is EAC.LapseTransaction => t.action === EAC.Action.Lapse;
+const isHoldTransaction = (t: EAC.Transaction): t is EAC.ExerciseAndHoldTransaction => t.action === EAC.Action.ExerciseAndHold;
 const isExerciseAndSellTransaction = (t: EAC.Transaction): t is EAC.ExerciseAndSellTransaction => t.action === EAC.Action.ExerciseAndSell;
 const isSellToCoverTransaction = (t: EAC.Transaction): t is EAC.SellToCoverTransaction => t.action === EAC.Action.SellToCover;
 const isOptionSaleTransaction = (t: EAC.Transaction): t is OptionSaleTransaction => isExerciseAndSellTransaction(t) || isSellToCoverTransaction(t);
@@ -52,7 +53,7 @@ const isSellToCoverHoldRow = (r: EAC.SellToCoverTransaction['rows'][number]): r 
 
 /**
  * Filters out all transactions which are not related to moving of stocks
- * 
+ *
  * @param individualHistory list of transactions to be filtered
  * @returns a list of transactions with only transactions related to gain or loss of stocks
  */
@@ -64,7 +65,7 @@ export function filterStockTransactions(individualHistory: Individual.Transactio
 /**
  * Filters out receiving and selling of shares related to selling options. These transactions
  * do not follow FIFO order and do not need to be considered when calculating capital income.
- * 
+ *
  * @param stockTransactions list of stock transactions from individual history
  * @param eacHistory full Equity Awards Center history
  * @returns a list of stock transactions without transactions related to selling of options
@@ -168,7 +169,7 @@ export interface Lot {
  * Calculates historical lots of shares received. For each lot the function calculates the number of shares
  * received on the date and the purchase price for the shares. Multiple shares received on the same date and
  * purchase price are merged into one lot.
- * 
+ *
  * @param stockTransactions list of stock transactions from individual history. See {@link filterStockTransactions}.
  * @param eacHistory full Equity Awards Center history
  * @returns list of Lots
@@ -178,6 +179,7 @@ export function buildLots(stockTransactions: StockTransaction[], eacHistory: EAC
     const lots: Lot[] = [];
     for (const spaTransaction of spaTransactions) {
         const lapseTransaction = findLapseTransaction(spaTransaction, eacHistory);
+        const holdTransaction = findHoldTransaction(spaTransaction, eacHistory);
         const sellToCoverTransaction = findSellToCoverTransaction(spaTransaction, eacHistory);
         if (lapseTransaction !== undefined) {
             lots.push({
@@ -190,15 +192,23 @@ export function buildLots(stockTransactions: StockTransaction[], eacHistory: EAC
         else if (sellToCoverTransaction !== undefined) {
             lots.push({
                 symbol: spaTransaction.symbol,
-                quantity: spaTransaction.quantity,
+                quantity: sellToCoverTransaction.rows.find(isSellToCoverHoldRow)?.sharesExercised || spaTransaction.quantity,
                 purchaseDate: sellToCoverTransaction.date,
-                purchasePriceUSD: sellToCoverTransaction.rows.find(isSellToCoverHoldRow)?.awardPriceUSD || 0, // TODO: This is probably not the correct purchase price. We should use the FMV price instead.
+                purchasePriceUSD: sellToCoverTransaction.rows.find(isSellToCoverSellRow)?.salePriceUSD || 0,
+            })
+        }
+        else if (holdTransaction !== undefined) {
+            lots.push({
+                symbol: spaTransaction.symbol,
+                quantity: spaTransaction.quantity,
+                purchaseDate: holdTransaction.date,
+                purchasePriceUSD: 0, // TODO: This is a missing value. We should find the FMV price instead.
             })
         }
         else {
             console.debug("Unmatched spaTransaction", spaTransaction);
             const transactionDate = spaTransaction.date.toLocaleDateString();
-            throw new Error(`Could not match Stock Plan Activity on ${transactionDate} to Lapse or Sell To Cover transaction`);
+            throw new Error(`Could not match Stock Plan Activity on ${transactionDate} to Lapse, Hold or Sell To Cover transaction`);
         }
 
     }
@@ -225,7 +235,7 @@ export function buildLots(stockTransactions: StockTransaction[], eacHistory: EAC
  */
 function findLapseTransaction(spaTransaction: Individual.StockPlanActivityTransaction, eacHistory: EAC.Transaction[]): EAC.LapseTransaction | undefined {
     const sortedLapseTransactions = eacHistory.filter(isLapseTransaction).sort(sortReverseChronologicalBy(t => t.date));
-    
+  
     const isBeforeOrEqualSPA = (lapseTransaction: EAC.LapseTransaction) => isBefore(lapseTransaction.date, spaTransaction.date) || isEqual(lapseTransaction.date, spaTransaction.date);
     const quantityMatchesSPA = (lapseTransaction: EAC.LapseTransaction) =>
         spaTransaction.quantity === lapseTransaction.lapseDetails.sharesDeposited
@@ -237,11 +247,24 @@ function findLapseTransaction(spaTransaction: Individual.StockPlanActivityTransa
     return lapseTransaction;
 }
 
+function findHoldTransaction(spaTransaction: Individual.StockPlanActivityTransaction, eacHistory: EAC.Transaction[]): EAC.ExerciseAndHoldTransaction | undefined {
+    const sortedHoldTransactions = eacHistory.filter(isHoldTransaction).sort(sortReverseChronologicalBy(t => t.date));
+
+    const isBeforeSPA = (holdTransaction: EAC.ExerciseAndHoldTransaction) => isBefore(holdTransaction.date, spaTransaction.date);
+    const quantityMatchesSPA = (holdTransaction: EAC.ExerciseAndHoldTransaction) =>
+        spaTransaction.quantity === holdTransaction.quantity
+
+    const holdTransaction = sortedHoldTransactions.find(ht => isBeforeSPA(ht) && quantityMatchesSPA(ht));
+
+    //if (!holdTransaction) throw new Error('Could not match to lapse');
+    return holdTransaction;
+}
+
 function findSellToCoverTransaction(spaTransaction: Individual.StockPlanActivityTransaction, eacHistory: EAC.Transaction[]): EAC.SellToCoverTransaction | undefined {
     const sellToCoverTransactions = eacHistory.filter(isSellToCoverTransaction);
 
     const isCloseToSPA = (sellToCoverTransaction: EAC.SellToCoverTransaction) => isWithinAWeek(spaTransaction.date, sellToCoverTransaction.date);
-    const quantityMatchesSPA = (sellToCoverTransaction: EAC.SellToCoverTransaction) => 
+    const quantityMatchesSPA = (sellToCoverTransaction: EAC.SellToCoverTransaction) =>
         sellToCoverTransaction.rows.filter(isSellToCoverHoldRow).some(r => r.sharesExercised === spaTransaction.quantity);
 
     const sellToCoverTransaction = sellToCoverTransactions.find(sct => isCloseToSPA(sct) && quantityMatchesSPA(sct));
@@ -252,7 +275,7 @@ function findSellToCoverTransaction(spaTransaction: Individual.StockPlanActivity
  * Links share losing transactions to the correct lots in order to calculate the correct purchase price.
  * The shares are sold in the First-In First-Out (FIFO) order. In case one lot is not enough to cover for
  * the whole sale transaction the transaction will be split to two parts in the output.
- * 
+ *
  * @param stockTransactions list of stock transactions from individual history. See {@link filterStockTransactions}.
  * @param lots list of lots. See {@link buildLots}
  * @returns list of transactions linked with the correct purchase prices. One transaction from input might get
@@ -316,7 +339,7 @@ export function calculateESPPSales(eacHistory: EAC.Transaction[]): ESPPTransacti
  * of the FMV for ESPP purchases is tax free for earned income, however this "tax free" portion needs to
  * be deducted from the purchase price in order to calculate the correct cost basis. Thus the 10% discount
  * is taxed as capital income at the time of sale.
- * 
+ *
  * @param purchaseFMV FMV at the time of the ESPP purchase
  * @param purchasePrice price paid for the ESPP shares
  */
