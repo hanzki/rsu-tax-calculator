@@ -14,7 +14,8 @@ export const AdditionalInformation: React.FC<AdditionalInformationProps> = ({
     eacHistory,
     onLotsChange
 }) => {
-    let individualInfo, eacInfo = "Not loaded";
+    let individualInfo = "Not loaded";
+    let eacInfo = "Not loaded";
     let earliestDate: Date | undefined;
 
     if (individualHistory) {
@@ -36,18 +37,18 @@ export const AdditionalInformation: React.FC<AdditionalInformationProps> = ({
 
     const [selection, setSelection] = React.useState<'containsAll' | 'hasEarlier' | ''>('');
 
-    type Lot = { id: string; shares: string; acquisitionDate: Date | null; totalCost: string };
+    type Lot = { id: string; shares: string; acquisitionDate: string; totalCost: string };
     const [lots, setLots] = React.useState<Lot[]>([]);
 
     React.useEffect(() => {
         if (selection === 'hasEarlier' && lots.length === 0) {
-            setLots([{ id: String(Date.now()), shares: '', acquisitionDate: null, totalCost: '' }]);
+            setLots([{ id: String(Date.now()), shares: '', acquisitionDate: '', totalCost: '' }]);
         }
     }, [selection]);
 
-    const addLot = () => setLots(s => [...s, { id: String(Date.now()) + Math.random().toString(36).slice(2,6), shares: '', acquisitionDate: null, totalCost: '' }]);
+    const addLot = () => setLots(s => [...s, { id: String(Date.now()) + Math.random().toString(36).slice(2,6), shares: '', acquisitionDate: '', totalCost: '' }]);
     const removeLot = (id: string) => setLots(s => s.filter(l => l.id !== id));
-    const updateLot = (id: string, field: keyof Lot, value: string | Date | null) => setLots(s => s.map(l => l.id === id ? { ...l, [field]: value } : l));
+    const updateLot = (id: string, field: keyof Lot, value: string) => setLots(s => s.map(l => l.id === id ? { ...l, [field]: value } : l));
 
     React.useEffect(() => {
         if (!onLotsChange) return;
@@ -57,7 +58,7 @@ export const AdditionalInformation: React.FC<AdditionalInformationProps> = ({
         }
         const normalized = lots.map(l => ({
             shares: l.shares === '' ? NaN : Number(l.shares),
-            acquisitionDate: l.acquisitionDate || new Date(),
+            acquisitionDate: l.acquisitionDate ? new Date(`${l.acquisitionDate}T00:00:00`) : new Date(''),
             totalAcquisitionCost: l.totalCost === '' ? NaN : Number(l.totalCost)
         }));
         onLotsChange(normalized);
@@ -107,8 +108,8 @@ export const AdditionalInformation: React.FC<AdditionalInformationProps> = ({
                                     <TextField
                                         label="Acquisition date"
                                         type="date"
-                                        value={lot.acquisitionDate ? lot.acquisitionDate.toISOString().split('T')[0] : ''}
-                                        onChange={(e) => updateLot(lot.id, 'acquisitionDate', e.target.value ? new Date(e.target.value) : null)}
+                                        value={lot.acquisitionDate}
+                                        onChange={(e) => updateLot(lot.id, 'acquisitionDate', e.target.value)}
                                         InputLabelProps={{ shrink: true }}
                                         size="small"
                                     />
