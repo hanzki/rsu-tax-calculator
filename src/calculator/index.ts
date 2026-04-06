@@ -328,7 +328,8 @@ function getCorrectESPPCostBasis(purchaseFMV: number, purchasePrice: number): nu
 export function calculateTaxes(
     individualHistory: Individual.Transaction[],
     eacHistory: EAC.Transaction[],
-    ecbConverter: ECBConverter
+    ecbConverter: ECBConverter,
+    earlierLots?: { shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[]
     ): TaxSaleOfSecurity[] {
         // Filter out non-stock transactions
         const stockTransactions = filterStockTransactions(individualHistory);
@@ -336,7 +337,43 @@ export function calculateTaxes(
         const transactionsWithoutOptionSales = filterOutOptionSales(stockTransactions, eacHistory);
 
         // Build list of lots
-        const lots = buildLots(transactionsWithoutOptionSales, eacHistory);
+        let lots = buildLots(transactionsWithoutOptionSales, eacHistory);
+
+        // Prepend any earlier lots provided by the user
+        if (earlierLots && earlierLots.length > 0) {
+            const existingSymbols = _.uniq(transactionsWithoutOptionSales.map(t => t.symbol));
+            if (existingSymbols.length === 0) {
+                throw new Error('Cannot determine stock symbol for earlier lots from uploaded transaction history');
+            }
+            if (existingSymbols.length > 1) {
+                throw new Error(`Multiple stock symbols found (${existingSymbols.join(', ')}). Earlier lots currently support one symbol at a time.`);
+            }
+
+            const symbol = existingSymbols[0];
+            const userProvidedLots: Lot[] = earlierLots.map(l => {
+                const shares = Number(l.shares);
+                const totalAcquisitionCost = Number(l.totalAcquisitionCost);
+                const purchaseDate = l.acquisitionDate;
+
+                if (!Number.isFinite(shares) || shares <= 0) {
+                    throw new Error('Earlier lots contain invalid share quantity. Please enter a positive number of shares for each lot.');
+                }
+                if (!Number.isFinite(totalAcquisitionCost) || totalAcquisitionCost < 0) {
+                    throw new Error('Earlier lots contain invalid total acquisition cost. Please enter a valid non-negative cost for each lot.');
+                }
+                if (!(purchaseDate instanceof Date) || Number.isNaN(purchaseDate.getTime())) {
+                    throw new Error('Earlier lots contain an invalid acquisition date. Please provide a valid date for each lot.');
+                }
+
+                return {
+                    symbol,
+                    quantity: shares,
+                    purchaseDate,
+                    purchasePriceUSD: totalAcquisitionCost / shares,
+                };
+            });
+            lots = [...userProvidedLots, ...lots];
+        }
 
         // Calculate correct cost basis
         const transactionsWithCostBasis = calculateCostBases(transactionsWithoutOptionSales, lots);

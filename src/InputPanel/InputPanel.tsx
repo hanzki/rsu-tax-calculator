@@ -7,10 +7,12 @@ import { parseIndividualHistory } from "../parser/schwabJSONIndividualHistoryPar
 import { CalculateButton } from "./CalculateButton";
 import { ErrorAlert } from "./ErrorAlert";
 import { WarningAlert } from "./WarningAlert";
+import { AdditionalInformation } from "./AdditionalInput";
 
 export type CalculationSettings = {
     individualHistory: Individual.Transaction[],
     eacHistory: EAC.Transaction[]
+    earlierLots?: { shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[]
 }
 
 export type InputPanelProps = {
@@ -26,6 +28,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
     const [eacHistoryError, setEACHistoryError] = React.useState();
     const [calculating, setCalculating] = React.useState(false);
     const [calculationDone, setCalculationDone] = React.useState(false);
+    const [earlierLots, setEarlierLots] = React.useState<{ shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[]>();
 
     const readyToCalculate = individualHistory && eacHistory;
     const hasErrors = !!individualHistoryError || !!eacHistoryError;
@@ -55,7 +58,8 @@ export const InputPanel: React.FC<InputPanelProps> = ({
         try {
             await onCalculate({
                 individualHistory,
-                eacHistory
+                eacHistory,
+                earlierLots
             });
             setCalculationDone(true);
         } catch (err: any) {
@@ -141,6 +145,11 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             <Box width={'1em'}></Box>
             <FileUpload {...eacUploadProp}></FileUpload>
         </Box>
+        {individualHistory || eacHistory ? <AdditionalInformation 
+            individualHistory={individualHistory}
+            eacHistory={eacHistory}
+            onLotsChange={setEarlierLots}
+        /> : null}
         <CalculateButton
             onClick={doCalculate}
             disabled={!readyToCalculate}

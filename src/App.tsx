@@ -37,7 +37,12 @@ function App() {
           throw new Error('Missing ECB currency rates');
         }
         try {
-          setTaxReport(calculateTaxes(settings.individualHistory, settings.eacHistory, ecbConverter));
+          setTaxReport(calculateTaxes(
+            settings.individualHistory,
+            settings.eacHistory,
+            ecbConverter,
+            settings.earlierLots
+          ));
         } catch (error: any) {
           setError(error);
           setCalculating(false);
