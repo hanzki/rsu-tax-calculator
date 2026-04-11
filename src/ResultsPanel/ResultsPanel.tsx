@@ -2,11 +2,11 @@ import { Box, Typography } from "@mui/material"
 import React from "react"
 import { last, sumBy, uniq } from "lodash";
 import * as Papa from 'papaparse';
-import { TaxSaleOfSecurity } from "../calculator";
+import { TaxSaleOfSecurity, YearEndStatementsByYear } from "../calculator";
 import { PeriodSelector } from "./PeriodSelector";
 import { SaleOfSecuritiesTable } from "./SaleOfSecuritiesTable";
 import { InsightCard } from "./InsightCard";
-import { format } from "date-fns";
+import { endOfYear, format, max } from "date-fns";
 
 declare global {
     interface Navigator {
@@ -15,7 +15,8 @@ declare global {
 }
 
 export type ResultsPanelProps = {
-    taxReport: TaxSaleOfSecurity[]
+    taxReport: TaxSaleOfSecurity[],
+    yearEndStatementsByYear: YearEndStatementsByYear,
 }
 
 const Spacer = () => <Box sx={{m: 1}}/>;
@@ -58,7 +59,8 @@ const CSV_EXPORT_COLUMNS: (keyof ReturnType<typeof formatForExport>)[] = [
 ];
 
 export const ResultsPanel: React.FC<ResultsPanelProps> = ({
-    taxReport
+    taxReport,
+    yearEndStatementsByYear
 }) => {
     const periods = uniq(taxReport.map(t => t.saleDate.getFullYear().toString())).sort();
     if (periods.length < 1) {
@@ -98,6 +100,50 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
         document.body.removeChild(elem);
     }
 
+    const downloadYearEndStatement = () => {
+        const yearEndStatement = yearEndStatementsByYear[period];
+        if (!yearEndStatement) {
+            throw new Error(`No year-end statement available for ${period}`);
+        }
+
+        const formatLot = (lot: typeof yearEndStatement.individual[number]) => ({
+            ...lot,
+            purchaseDate: format(lot.purchaseDate, 'yyyy-MM-dd'),
+        });
+
+        const latestPeriod = periods[periods.length - 1];
+        const throughDate =
+            period === latestPeriod && salesWithinPeriod.length > 0
+                ? max(salesWithinPeriod.map(t => t.saleDate))
+                : endOfYear(new Date(parseInt(period, 10), 0, 1));
+        const reportThroughDate = format(throughDate, 'yyyy-MM-dd');
+
+        const fileContent = JSON.stringify({
+            reportThroughDate,
+            generatedAt: format(new Date(), "yyyy-MM-dd'T'HH:mm:ssxxx"),
+            appVersion: __APP_VERSION__,
+            accounts: {
+                individual: yearEndStatement.individual.map(formatLot),
+                eac: yearEndStatement.eac.map(formatLot),
+            }
+        }, null, 2);
+        const filename = `rsu_year_end_statement_${reportThroughDate}_${format(new Date(), 'yyyyMMdd')}.json`;
+
+        const blob = new Blob([fileContent], { type: 'application/json' });
+
+        if (window.navigator.msSaveBlob) {
+            window.navigator.msSaveBlob(blob, filename);
+            return;
+        }
+
+        const elem = window.document.createElement('a');
+        elem.href = window.URL.createObjectURL(blob);
+        elem.download = filename;
+        document.body.appendChild(elem);
+        elem.click();
+        document.body.removeChild(elem);
+    }
+
     return <Box sx={{
         padding: '10px',
         display: 'flex',
@@ -121,6 +167,10 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
             <Spacer/>
             <InsightCard title="Capital losses" valueEUR={capitalLoss}/>
         </Box>
-        <SaleOfSecuritiesTable transactions={salesWithinPeriod} onDownload={downloadReport}/>
+        <SaleOfSecuritiesTable
+            transactions={salesWithinPeriod}
+            onDownload={downloadReport}
+            onDownloadYearEndStatement={downloadYearEndStatement}
+        />
     </Box>
 };

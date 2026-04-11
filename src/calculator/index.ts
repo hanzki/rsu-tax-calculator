@@ -44,7 +44,7 @@ const isOptionSaleTransaction = (t: EAC.Transaction): t is OptionSaleTransaction
 type ESPPSaleTraction = EAC.SaleTransaction | EAC.ForcedQuickSellTransaction;
 
 const isSaleTransaction = (t: EAC.Transaction): t is EAC.SaleTransaction => t.action === EAC.Action.Sale;
-const isForcedQuickSellTransaction = (t: EAC.Transaction): t is EAC.SaleTransaction => t.action === EAC.Action.ForcedQuickSell;
+const isForcedQuickSellTransaction = (t: EAC.Transaction): t is EAC.ForcedQuickSellTransaction => t.action === EAC.Action.ForcedQuickSell;
 const isESPPSaleTransaction = (t: EAC.Transaction): t is ESPPSaleTraction => isSaleTransaction(t) || isForcedQuickSellTransaction(t);
 
 const isSellToCoverSellRow = (r: EAC.SellToCoverTransaction['rows'][number]): r is EAC.SellToCoverSellRow => r.action === EAC.SellToCoverAction.Sell;
@@ -162,6 +162,25 @@ export interface Lot {
     quantity: number,
     purchaseDate: Date,
     purchasePriceUSD: number,
+}
+
+export interface YearEndLot {
+    symbol: string,
+    quantity: number,
+    purchaseDate: Date,
+    purchasePriceUSD: number,
+}
+
+export interface YearEndStatementAccounts {
+    individual: YearEndLot[],
+    eac: YearEndLot[],
+}
+
+export type YearEndStatementsByYear = Record<string, YearEndStatementAccounts>;
+
+export interface CalculationResult {
+    taxReport: TaxSaleOfSecurity[],
+    yearEndStatementsByYear: YearEndStatementsByYear,
 }
 
 /**
@@ -325,12 +344,110 @@ function getCorrectESPPCostBasis(purchaseFMV: number, purchasePrice: number): nu
     return Math.max(purchasePrice, purchaseFMV - maxTaxFreeDiscount);
 }
 
+function remainingLotsAtCutoff(lots: Lot[], forfeitureEvents: ForfeitureEvent[], cutoff: Date): YearEndLot[] {
+    const cutoffEvents = forfeitureEvents
+        .filter(event => !isBefore(cutoff, event.date))
+        .sort(sortChronologicalBy(event => event.date));
+    const chronologicalLots = [...lots].sort(sortChronologicalBy(lot => lot.purchaseDate));
+
+    const lotRemainder = chronologicalLots.map(lot => ({
+        lot,
+        remainingQuantity: lot.quantity
+    }));
+
+    let currentLotIndex = 0;
+    for (const event of cutoffEvents) {
+        let remainingEventQuantity = event.quantity;
+
+        while (remainingEventQuantity > 0) {
+            const currentLot = lotRemainder[currentLotIndex];
+            if (!currentLot) {
+                const forfeitureDate = event.date.toLocaleDateString();
+                throw new Error(`Couldn't match stock forfeiture event on ${forfeitureDate} to a lot`);
+            }
+            if (isBefore(event.date, currentLot.lot.purchaseDate)) {
+                const forfeitureDate = event.date.toLocaleDateString();
+                throw new Error(`Couldn't match stock forfeiture event on ${forfeitureDate} to a lot`);
+            }
+            if (currentLot.remainingQuantity < 1) {
+                currentLotIndex += 1;
+                continue;
+            }
+
+            const matchedQuantity = Math.min(currentLot.remainingQuantity, remainingEventQuantity);
+            currentLot.remainingQuantity -= matchedQuantity;
+            remainingEventQuantity -= matchedQuantity;
+
+            if (currentLot.remainingQuantity < 1) {
+                currentLotIndex += 1;
+            }
+        }
+    }
+
+    return lotRemainder
+        .filter(item => item.remainingQuantity > 0 && !isBefore(cutoff, item.lot.purchaseDate))
+        .map(item => ({
+            symbol: item.lot.symbol,
+            quantity: item.remainingQuantity,
+            purchaseDate: item.lot.purchaseDate,
+            purchasePriceUSD: item.lot.purchasePriceUSD,
+        }));
+}
+
+function buildEACDepositLots(eacHistory: EAC.Transaction[]): Lot[] {
+    const depositTransactions = eacHistory.filter((transaction): transaction is EAC.DepositTransaction => transaction.action === EAC.Action.Deposit);
+    return depositTransactions.map(transaction => ({
+        symbol: transaction.symbol,
+        quantity: transaction.quantity,
+        purchaseDate: transaction.depositDetails.purchaseDate,
+        purchasePriceUSD: getCorrectESPPCostBasis(transaction.depositDetails.purchaseFMVUSD, transaction.depositDetails.purchasePriceUSD),
+    }));
+}
+
+function buildEACForfeitureEvents(eacHistory: EAC.Transaction[]): ForfeitureEvent[] {
+    const esppSales = eacHistory.filter(isESPPSaleTransaction);
+    return esppSales.flatMap(transaction =>
+        transaction.rows.map(row => ({
+            date: transaction.date,
+            quantity: row.shares
+        }))
+    );
+}
+
+function buildYearEndStatementsByYear(
+    periods: string[],
+    individualLots: Lot[],
+    individualForfeitureEvents: ForfeitureEvent[],
+    eacLots: Lot[],
+    eacForfeitureEvents: ForfeitureEvent[]
+): YearEndStatementsByYear {
+    return periods.reduce<YearEndStatementsByYear>((result, period) => {
+        const year = Number(period);
+        const cutoff = new Date(year, 11, 31);
+
+        result[period] = {
+            individual: remainingLotsAtCutoff(individualLots, individualForfeitureEvents, cutoff),
+            eac: remainingLotsAtCutoff(eacLots, eacForfeitureEvents, cutoff),
+        };
+        return result;
+    }, {});
+}
+
 export function calculateTaxes(
     individualHistory: Individual.Transaction[],
     eacHistory: EAC.Transaction[],
     ecbConverter: ECBConverter,
     earlierLots?: { shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[]
     ): TaxSaleOfSecurity[] {
+        return calculateTaxResults(individualHistory, eacHistory, ecbConverter, earlierLots).taxReport;
+    }
+
+export function calculateTaxResults(
+    individualHistory: Individual.Transaction[],
+    eacHistory: EAC.Transaction[],
+    ecbConverter: ECBConverter,
+    earlierLots?: { shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[]
+    ): CalculationResult {
         // Filter out non-stock transactions
         const stockTransactions = filterStockTransactions(individualHistory);
 
@@ -387,6 +504,25 @@ export function calculateTaxes(
         const esppReport = createESPPTaxReport(esppTransactionsWithCostBasis, ecbConverter);
 
         const combinedReport = [...taxReport, ...esppReport].sort(sortChronologicalBy(row => row.saleDate));
+        const periods = _.uniq(combinedReport.map(row => row.saleDate.getFullYear().toString())).sort();
 
-        return combinedReport;
+        const individualForfeitureEvents = transactionsWithoutOptionSales
+            .filter(transaction => isSellTransaction(transaction) || (isSecurityTransferTransaction(transaction) && transaction.quantity < 0))
+            .map(transaction => ({
+                date: transaction.date,
+                quantity: Math.abs(transaction.quantity),
+            }));
+        const eacLots = buildEACDepositLots(eacHistory);
+        const eacForfeitureEvents = buildEACForfeitureEvents(eacHistory);
+
+        return {
+            taxReport: combinedReport,
+            yearEndStatementsByYear: buildYearEndStatementsByYear(
+                periods,
+                lots,
+                individualForfeitureEvents,
+                eacLots,
+                eacForfeitureEvents
+            ),
+        };
     }

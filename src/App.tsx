@@ -2,7 +2,7 @@ import React from 'react';
 import { Container } from '@mui/system';
 import { ThemeProvider, createTheme, Typography, Divider, CircularProgress, Box, Link } from '@mui/material';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import { calculateTaxes, TaxSaleOfSecurity } from './calculator';
+import { calculateTaxResults, CalculationResult } from './calculator';
 import { ECBConverter } from './ecbRates';
 import { CalculationSettings, InputPanel } from './InputPanel/InputPanel';
 import { ResultsPanel } from './ResultsPanel/ResultsPanel';
@@ -18,7 +18,7 @@ const CHANGELOG_URL = 'https://github.com/hanzki/rsu-tax-calculator/blob/master/
 
 function App() {
   const [ecbConverter, setECBConverter] = React.useState<ECBConverter>();
-  const [taxReport, setTaxReport] = React.useState<TaxSaleOfSecurity[]>();
+  const [calculationResult, setCalculationResult] = React.useState<CalculationResult>();
   const [calculating, setCalculating] = React.useState(false);
   const [error, setError] = React.useState<any>();
 
@@ -37,7 +37,7 @@ function App() {
           throw new Error('Missing ECB currency rates');
         }
         try {
-          setTaxReport(calculateTaxes(
+          setCalculationResult(calculateTaxResults(
             settings.individualHistory,
             settings.eacHistory,
             ecbConverter,
@@ -99,9 +99,12 @@ function App() {
 
           { error && <CalculationError/> }
 
-          { taxReport && <ResultsPanel taxReport={taxReport}/> }
+          { calculationResult && <ResultsPanel
+            taxReport={calculationResult.taxReport}
+            yearEndStatementsByYear={calculationResult.yearEndStatementsByYear}
+          /> }
 
-          { (calculating || taxReport) && <Divider variant='middle' sx={{m: 1}}/>}
+          { (calculating || calculationResult) && <Divider variant='middle' sx={{m: 1}}/>}
 
           <Footer/>
         </Container>
