@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.13.0-beta
+* Added option to input shares held in the account before the start of the uploaded history files.
+* Added option to download a file that lists shares held in both accounts at the end of a selected year.
+
 ## v0.12.0-beta
 * Added proper reporting of forced quick sale of ESPP shares.
 

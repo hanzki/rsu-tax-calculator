@@ -6,7 +6,7 @@ import { TaxSaleOfSecurity, YearEndStatementsByYear } from "../calculator";
 import { PeriodSelector } from "./PeriodSelector";
 import { SaleOfSecuritiesTable } from "./SaleOfSecuritiesTable";
 import { InsightCard } from "./InsightCard";
-import { format } from "date-fns";
+import { endOfYear, format, max } from "date-fns";
 
 declare global {
     interface Navigator {
@@ -111,8 +111,15 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
             purchaseDate: format(lot.purchaseDate, 'yyyy-MM-dd'),
         });
 
+        const latestPeriod = periods[periods.length - 1];
+        const throughDate =
+            period === latestPeriod && salesWithinPeriod.length > 0
+                ? max(salesWithinPeriod.map(t => t.saleDate))
+                : endOfYear(new Date(parseInt(period, 10), 0, 1));
+        const reportThroughDate = format(throughDate, 'yyyy-MM-dd');
+
         const fileContent = JSON.stringify({
-            selectedYear: period,
+            reportThroughDate,
             generatedAt: format(new Date(), "yyyy-MM-dd'T'HH:mm:ssxxx"),
             appVersion: __APP_VERSION__,
             accounts: {
@@ -120,7 +127,7 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
                 eac: yearEndStatement.eac.map(formatLot),
             }
         }, null, 2);
-        const filename = `rsu_year_end_statement_${period}_${format(new Date(), 'yyyyMMdd')}.json`;
+        const filename = `rsu_year_end_statement_${reportThroughDate}_${format(new Date(), 'yyyyMMdd')}.json`;
 
         const blob = new Blob([fileContent], { type: 'application/json' });
 
