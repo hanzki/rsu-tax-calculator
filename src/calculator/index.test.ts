@@ -2,6 +2,7 @@ import { expect, describe, beforeEach, it } from 'vitest'
 import { EACHistoryData, IndividualHistoryData } from '../test/data';
 import * as Calculator from './index';
 import { EAC, Individual } from './types';
+import { ECBConverter } from '../ecbRates';
 
 describe('calculator', () => {
     describe('filterStockTransactions', () => {
@@ -363,6 +364,133 @@ describe('calculator', () => {
                     purchasePriceUSD: lots[0].purchasePriceUSD,
                     quantity: stockTransactions[0].quantity
                 })
+            });
+        });
+    });
+
+    describe('calculateTaxResults', () => {
+        it('builds year-end USD lot snapshots for both accounts by selected sale years', () => {
+            const individualHistory: Individual.Transaction[] = [
+                IndividualHistoryData.spaTransaction({ date: new Date(2020, 0, 15), quantity: 100, symbol: 'U' }),
+                IndividualHistoryData.sellTransaction({ date: new Date(2021, 5, 10), quantity: 40, symbol: 'U', priceUSD: 55 }),
+                IndividualHistoryData.sellTransaction({ date: new Date(2022, 6, 10), quantity: 20, symbol: 'U', priceUSD: 60 }),
+            ];
+
+            const eacHistory: EAC.Transaction[] = [
+                EACHistoryData.lapseTransaction({
+                    date: new Date(2020, 0, 15),
+                    symbol: 'U',
+                    lapseDetails: {
+                        sharesDeposited: 100,
+                        sharesSold: 0,
+                        fmvUSD: 10
+                    }
+                }),
+                {
+                    action: EAC.Action.Deposit,
+                    date: new Date(2020, 0, 2),
+                    symbol: 'U',
+                    description: 'ESPP Deposit',
+                    quantity: 50,
+                    depositDetails: {
+                        subscriptionDate: new Date(2019, 10, 1),
+                        subscriptionFMVUSD: 10,
+                        purchaseDate: new Date(2020, 0, 2),
+                        purchasePriceUSD: 9,
+                        purchaseFMVUSD: 10,
+                    }
+                },
+                {
+                    action: EAC.Action.Sale,
+                    date: new Date(2021, 8, 1),
+                    symbol: 'U',
+                    description: 'ESPP Sale 2021',
+                    quantity: 10,
+                    feesUSD: 0,
+                    amountUSD: 120,
+                    rows: [
+                        {
+                            type: 'ESPP',
+                            shares: 10,
+                            salePriceUSD: 12,
+                            subscriptionDate: new Date(2019, 10, 1),
+                            subscriptionFMVUSD: 10,
+                            purchaseDate: new Date(2020, 0, 2),
+                            purchasePriceUSD: 9,
+                            purchaseFMVUSD: 10,
+                            grossProceedsUSD: 120,
+                        }
+                    ]
+                },
+                {
+                    action: EAC.Action.Sale,
+                    date: new Date(2022, 8, 1),
+                    symbol: 'U',
+                    description: 'ESPP Sale 2022',
+                    quantity: 15,
+                    feesUSD: 0,
+                    amountUSD: 180,
+                    rows: [
+                        {
+                            type: 'ESPP',
+                            shares: 15,
+                            salePriceUSD: 12,
+                            subscriptionDate: new Date(2019, 10, 1),
+                            subscriptionFMVUSD: 10,
+                            purchaseDate: new Date(2020, 0, 2),
+                            purchasePriceUSD: 9,
+                            purchaseFMVUSD: 10,
+                            grossProceedsUSD: 180,
+                        }
+                    ]
+                }
+            ] as EAC.Transaction[];
+
+            const ecbConverterMock = {
+                usdToEUR: (usdValue: number) => usdValue,
+                usdToEURRate: () => 1,
+            } as ECBConverter;
+
+            const result = Calculator.calculateTaxResults(individualHistory, eacHistory, ecbConverterMock);
+
+            expect(Object.keys(result.yearEndStatementsByYear)).toEqual(['2021', '2022']);
+
+            expect(result.yearEndStatementsByYear['2021']).toEqual({
+                individual: [
+                    {
+                        symbol: 'U',
+                        quantity: 60,
+                        purchaseDate: new Date(2020, 0, 15),
+                        purchasePriceUSD: 10,
+                    }
+                ],
+                eac: [
+                    {
+                        symbol: 'U',
+                        quantity: 40,
+                        purchaseDate: new Date(2020, 0, 2),
+                        purchasePriceUSD: 9,
+                    }
+                ]
+            });
+
+            expect(result.yearEndStatementsByYear['2022']).toEqual({
+                individual: [
+                    {
+                        symbol: 'U',
+                        quantity: 40,
+                        purchaseDate: new Date(2020, 0, 15),
+                        purchasePriceUSD: 10,
+                    }
+                ],
+                eac: [
+                    {
+                        symbol: 'U',
+                        quantity: 25,
+                        purchaseDate: new Date(2020, 0, 2),
+                        purchasePriceUSD: 9,
+                    }
+                ]
             });
         });
     });

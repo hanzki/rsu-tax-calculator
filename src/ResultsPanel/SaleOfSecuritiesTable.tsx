@@ -14,11 +14,13 @@ import { TaxSaleOfSecurity } from "../calculator";
 export type SaleOfSecuritiesTableProps = {
     transactions: TaxSaleOfSecurity[],
     onDownload: () => unknown,
+    onDownloadYearEndStatement: () => unknown,
 }
 
 export const SaleOfSecuritiesTable: React.FC<SaleOfSecuritiesTableProps> = ({
     transactions,
-    onDownload
+    onDownload,
+    onDownloadYearEndStatement
 }) => {
 
 const accountName = (row: TaxSaleOfSecurity) => row.isESPP ? 'EAC': 'Individual';
@@ -29,7 +31,10 @@ return <Box>
         mb: 1
     }}>
         <Typography variant="h5" textAlign="left" component='span'>Sales within the period</Typography>
-        <Button variant="text" size="small" startIcon={<DownloadRoundedIcon/>} onClick={onDownload}>Download</Button>
+        <Box>
+            <Button variant="text" size="small" startIcon={<DownloadRoundedIcon/>} onClick={onDownloadYearEndStatement}>Download Year-End Statement</Button>
+            <Button variant="text" size="small" startIcon={<DownloadRoundedIcon/>} onClick={onDownload}>Download Sales</Button>
+        </Box>
     </Box>
     <TableContainer component={Paper}>
         <Table sx={{ minWidth: 650 }} aria-label="simple table">
