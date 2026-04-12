@@ -68,6 +68,7 @@ export const InstructionsPanel: React.FC<InstructionsPanelProps> = () => {
             </Alert>
             <Alert severity="info">
                 <AlertTitle sx={{fontWeight: 'bold'}}>New Features</AlertTitle>
+                <strong>0.14.x</strong> - You can upload a prior year-end statement JSON (third option under earlier shares). Schwab history is trimmed at <strong>reportThroughDate</strong> and opening lots from the file are used for both accounts.<br/>
                 <strong>0.13.x</strong> - The calculator now supports inputting shares held in the account before the start of the uploaded history files. You can also download a file that lists shares held in both accounts at the end of a selected year.<br/>
                 <strong>0.12.x</strong> - The calculator now reports correctly forced sale of ESPP shares.<br/>
             </Alert>

@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.14.0-beta
+* Added optional upload of a year-end statement JSON (from this app’s “Download Year-End Statement”) when the account already held shares before the Schwab export window. Transactions on or before `reportThroughDate` are omitted from the uploaded Individual and EAC histories; opening lots from the file are applied for both accounts.
+
 ## v0.13.0-beta
 * Added option to input shares held in the account before the start of the uploaded history files.
 * Added option to download a file that lists shares held in both accounts at the end of a selected year.

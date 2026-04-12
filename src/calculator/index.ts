@@ -1,4 +1,4 @@
-import { isBefore, isEqual } from "date-fns";
+import { isBefore, isEqual, isAfter, startOfDay } from "date-fns";
 import _ from "lodash";
 import { ECBConverter } from "../ecbRates";
 import { isWithinAWeek, sortChronologicalBy, sortReverseChronologicalBy } from "../util";
@@ -58,6 +58,23 @@ const isSellToCoverHoldRow = (r: EAC.SellToCoverTransaction['rows'][number]): r 
  */
 export function filterStockTransactions(individualHistory: Individual.Transaction[]): StockTransaction[] {
     return individualHistory.filter(isStockTransaction);
+}
+
+/**
+ * Drops transactions on or before {@link reportThroughDate} (calendar day in local time).
+ * Used with a prior year-end export so overlapping history is not processed twice.
+ */
+export function filterHistoriesAfterYearEndReport(
+    individualHistory: Individual.Transaction[],
+    eacHistory: EAC.Transaction[],
+    reportThroughDate: Date
+): { individualHistory: Individual.Transaction[]; eacHistory: EAC.Transaction[] } {
+    const cutoff = startOfDay(reportThroughDate);
+    const keep = (d: Date) => isAfter(startOfDay(d), cutoff);
+    return {
+        individualHistory: individualHistory.filter(t => keep(t.date)),
+        eacHistory: eacHistory.filter(t => keep(t.date)),
+    };
 }
 
 
@@ -437,16 +454,18 @@ export function calculateTaxes(
     individualHistory: Individual.Transaction[],
     eacHistory: EAC.Transaction[],
     ecbConverter: ECBConverter,
-    earlierLots?: { shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[]
+    earlierLots?: { shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[],
+    earlierEacLots?: Lot[]
     ): TaxSaleOfSecurity[] {
-        return calculateTaxResults(individualHistory, eacHistory, ecbConverter, earlierLots).taxReport;
+        return calculateTaxResults(individualHistory, eacHistory, ecbConverter, earlierLots, earlierEacLots).taxReport;
     }
 
 export function calculateTaxResults(
     individualHistory: Individual.Transaction[],
     eacHistory: EAC.Transaction[],
     ecbConverter: ECBConverter,
-    earlierLots?: { shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[]
+    earlierLots?: { shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[],
+    earlierEacLots?: Lot[]
     ): CalculationResult {
         // Filter out non-stock transactions
         const stockTransactions = filterStockTransactions(individualHistory);
@@ -512,7 +531,10 @@ export function calculateTaxResults(
                 date: transaction.date,
                 quantity: Math.abs(transaction.quantity),
             }));
-        const eacLots = buildEACDepositLots(eacHistory);
+        let eacLots = buildEACDepositLots(eacHistory);
+        if (earlierEacLots && earlierEacLots.length > 0) {
+            eacLots = [...earlierEacLots, ...eacLots];
+        }
         const eacForfeitureEvents = buildEACForfeitureEvents(eacHistory);
 
         return {

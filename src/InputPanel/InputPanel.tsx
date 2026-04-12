@@ -1,18 +1,20 @@
 import { Box, Typography } from "@mui/material"
 import React from "react"
 import { EAC, Individual } from "../calculator/types";
+import { Lot, filterHistoriesAfterYearEndReport } from "../calculator";
+import { ParsedYearEndStatement } from "../parser/yearEndStatementParser";
+import { EarlierInputMode, AdditionalInformation } from "./AdditionalInput";
 import { FileUpload, FileUploadProps } from "../FileUpload/FileUpload";
 import { parseEACHistory } from "../parser/schwabJSONEACHistoryParser";
 import { parseIndividualHistory } from "../parser/schwabJSONIndividualHistoryParser";
 import { CalculateButton } from "./CalculateButton";
 import { ErrorAlert } from "./ErrorAlert";
 import { WarningAlert } from "./WarningAlert";
-import { AdditionalInformation } from "./AdditionalInput";
-
 export type CalculationSettings = {
     individualHistory: Individual.Transaction[],
     eacHistory: EAC.Transaction[]
     earlierLots?: { shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[]
+    earlierEacLots?: Lot[]
 }
 
 export type InputPanelProps = {
@@ -29,8 +31,14 @@ export const InputPanel: React.FC<InputPanelProps> = ({
     const [calculating, setCalculating] = React.useState(false);
     const [calculationDone, setCalculationDone] = React.useState(false);
     const [earlierLots, setEarlierLots] = React.useState<{ shares: number; acquisitionDate: Date; totalAcquisitionCost: number }[]>();
+    const [parsedYearEnd, setParsedYearEnd] = React.useState<ParsedYearEndStatement | undefined>();
+    const [earlierInputMode, setEarlierInputMode] = React.useState<EarlierInputMode>('none');
 
-    const readyToCalculate = individualHistory && eacHistory;
+    const readyToCalculate = Boolean(
+        individualHistory &&
+        eacHistory &&
+        (earlierInputMode !== 'yearEnd' || parsedYearEnd)
+    );
     const hasErrors = !!individualHistoryError || !!eacHistoryError;
 
     const warnings = [];
@@ -56,10 +64,28 @@ export const InputPanel: React.FC<InputPanelProps> = ({
         setCalculating(true);
 
         try {
+            let ind = individualHistory;
+            let eac = eacHistory;
+            let lotsForCalc = earlierLots;
+            let earlierEacLots: Lot[] | undefined;
+
+            if (earlierInputMode === 'yearEnd' && parsedYearEnd) {
+                const filtered = filterHistoriesAfterYearEndReport(ind, eac, parsedYearEnd.reportThroughDate);
+                ind = filtered.individualHistory;
+                eac = filtered.eacHistory;
+                lotsForCalc = parsedYearEnd.individualLots.map(lot => ({
+                    shares: lot.quantity,
+                    acquisitionDate: lot.purchaseDate,
+                    totalAcquisitionCost: lot.quantity * lot.purchasePriceUSD,
+                }));
+                earlierEacLots = parsedYearEnd.eacLots;
+            }
+
             await onCalculate({
-                individualHistory,
-                eacHistory,
-                earlierLots
+                individualHistory: ind,
+                eacHistory: eac,
+                earlierLots: lotsForCalc,
+                earlierEacLots,
             });
             setCalculationDone(true);
         } catch (err: any) {
@@ -149,6 +175,9 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             individualHistory={individualHistory}
             eacHistory={eacHistory}
             onLotsChange={setEarlierLots}
+            onYearEndStatementChange={setParsedYearEnd}
+            onEarlierInputModeChange={setEarlierInputMode}
+            yearEndStatementLoaded={!!parsedYearEnd}
         /> : null}
         <CalculateButton
             onClick={doCalculate}

@@ -41,7 +41,8 @@ function App() {
             settings.individualHistory,
             settings.eacHistory,
             ecbConverter,
-            settings.earlierLots
+            settings.earlierLots,
+            settings.earlierEacLots
           ));
         } catch (error: any) {
           setError(error);
