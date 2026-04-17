@@ -164,7 +164,6 @@ export namespace EAC {
 
     const OptionsDetails = Record({
         exerciseCostUSD: Number,
-        grossProceedsUSD: Number,
         netProceedsUSD: Number,
     });
 
@@ -210,7 +209,6 @@ export namespace EAC {
         purchaseDate: InstanceOf(Date),
         purchasePriceUSD: Number,
         purchaseFMVUSD: Number,
-        grossProceedsUSD: Number,  
     });
 
     const SaleTransaction = Record({
@@ -292,7 +290,6 @@ export namespace EAC {
         purchaseDate: InstanceOf(Date),
         purchasePriceUSD: Number,
         purchaseFMVUSD: Number,
-        grossProceedsUSD: Number,  
     });
 
     const ForcedQuickSellTransaction = Record({

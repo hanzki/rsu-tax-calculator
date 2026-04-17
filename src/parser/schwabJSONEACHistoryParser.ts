@@ -28,7 +28,6 @@ const FIELD_SALE_PURCHASE_FMV = 'PurchaseFairMarketValue';
 // const FIELD_SALE_GRANT_ID = 'GrantId';
 // const FIELD_SALE_VEST_DATE = 'VestDate';
 // const FIELD_SALE_VEST_FMV = 'VestFairMarketValue';
-const FIELD_SALE_GROSS_PROCEEDS = 'GrossProceeds';
 
 const FIELD_LAPSE_AWARD_DATE = 'AwardDate';
 const FIELD_LAPSE_AWARD_ID = 'AwardId';
@@ -48,10 +47,9 @@ const FIELD_EXERCISE_AND_SELL_SALE_PRICE = 'Sale Price';
 const FIELD_EXERCISE_AND_SELL_AWARD_TYPE = 'Award Type';
 const FIELD_EXERCISE_AND_SELL_AWARD_DATE = 'Award Date';
 
-// "","Exercise Cost","Taxes","Gross Proceeds","Net Proceeds",
+// "","Exercise Cost","Taxes",...,"Net Proceeds",
 const FIELD_OPTIONS_DETAILS_EXERCISE_COST = 'Exercise Cost';
 const FIELD_OPTIONS_DETAILS_TAXES = 'Taxes';
-const FIELD_OPTIONS_DETAILS_GROSS_PROCEEDS = 'Gross Proceeds';
 const FIELD_OPTIONS_DETAILS_NET_PROCEEDS = 'Net Proceeds';
 
 // "","Award Id","Action","Shares Exercised","Award Price","Sale Price","Award Type","Award Date",
@@ -120,7 +118,6 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
                     purchaseDate: parseDates(saleDetailsRowLine[FIELD_SALE_PURCHASE_DATE])[0],
                     purchasePriceUSD: parseUSD(saleDetailsRowLine[FIELD_SALE_PURCHASE_PRICE]),
                     purchaseFMVUSD: parseUSD(saleDetailsRowLine[FIELD_SALE_PURCHASE_FMV]),
-                    grossProceedsUSD: parseUSD(saleDetailsRowLine[FIELD_SALE_GROSS_PROCEEDS]),
                 }
                 saleDetailsRows.push(saleDetailsRow);
             }
@@ -155,7 +152,6 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
                     purchaseDate: parseDates(detailsRowLine[FIELD_SALE_PURCHASE_DATE])[0],
                     purchasePriceUSD: parseUSD(detailsRowLine[FIELD_SALE_PURCHASE_PRICE]),
                     purchaseFMVUSD: parseUSD(detailsRowLine[FIELD_SALE_PURCHASE_FMV]),
-                    grossProceedsUSD: parseUSD(detailsRowLine[FIELD_SALE_GROSS_PROCEEDS]),
                 }
                 forcedQuickSellDetailsRows.push(saleDetailsRow);
             }
@@ -192,7 +188,6 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
             const optionsDetailsLine = readLine(parsed.data[i+2], OPTIONS_DETAILS_HEADER);
             const optionsDetails = {
                 exerciseCostUSD: parseUSD(optionsDetailsLine[FIELD_OPTIONS_DETAILS_EXERCISE_COST]),
-                grossProceedsUSD: parseUSD(optionsDetailsLine[FIELD_OPTIONS_DETAILS_GROSS_PROCEEDS]),
                 netProceedsUSD: parseUSD(optionsDetailsLine[FIELD_OPTIONS_DETAILS_NET_PROCEEDS]),
             }
             eacTransaction.details = optionsDetails;
@@ -228,7 +223,6 @@ export function parseEACHistory(input: string): EAC.Transaction[] {
             const optionsDetailsLine = readLine(parsed.data[i+2], OPTIONS_DETAILS_HEADER);
             const optionsDetails = {
                 exerciseCostUSD: parseUSD(optionsDetailsLine[FIELD_OPTIONS_DETAILS_EXERCISE_COST]),
-                grossProceedsUSD: parseUSD(optionsDetailsLine[FIELD_OPTIONS_DETAILS_GROSS_PROCEEDS]),
                 netProceedsUSD: parseUSD(optionsDetailsLine[FIELD_OPTIONS_DETAILS_NET_PROCEEDS]),
             }
             eacTransaction.details = optionsDetails;

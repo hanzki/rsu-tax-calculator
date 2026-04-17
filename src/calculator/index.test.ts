@@ -112,7 +112,6 @@ describe('calculator', () => {
                         ],
                         details: {
                             exerciseCostUSD: 1250,
-                            grossProceedsUSD: 4750,
                             netProceedsUSD: 3499,
                         }
                     })
@@ -441,7 +440,6 @@ describe('calculator', () => {
                             purchaseDate: new Date(2020, 0, 2),
                             purchasePriceUSD: 9,
                             purchaseFMVUSD: 10,
-                            grossProceedsUSD: 120,
                         }
                     ]
                 },
@@ -463,7 +461,6 @@ describe('calculator', () => {
                             purchaseDate: new Date(2020, 0, 2),
                             purchasePriceUSD: 9,
                             purchaseFMVUSD: 10,
-                            grossProceedsUSD: 180,
                         }
                     ]
                 }

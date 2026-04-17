@@ -101,7 +101,6 @@ export namespace EACHistoryData {
             ...overrides,
             details: {
                 exerciseCostUSD: 1250,
-                grossProceedsUSD: 4750,
                 netProceedsUSD: 3499,
             }
         } as EAC.ExerciseAndSellTransaction
