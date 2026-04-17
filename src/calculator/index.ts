@@ -1,4 +1,4 @@
-import { isBefore, isEqual, isAfter, startOfDay } from "date-fns";
+import { isBefore, isEqual, isAfter, startOfDay, max } from "date-fns";
 import _ from "lodash";
 import { ECBConverter } from "../ecbRates";
 import { isWithinAWeek, sortChronologicalBy, sortReverseChronologicalBy } from "../util";
@@ -198,6 +198,8 @@ export type YearEndStatementsByYear = Record<string, YearEndStatementAccounts>;
 export interface CalculationResult {
     taxReport: TaxSaleOfSecurity[],
     yearEndStatementsByYear: YearEndStatementsByYear,
+    /** Latest transaction date in each calendar year across input Individual + EAC histories (uploaded files as passed to calculation). */
+    maxHistoryTransactionDateByYear: Record<string, Date>,
 }
 
 /**
@@ -431,6 +433,30 @@ function buildEACForfeitureEvents(eacHistory: EAC.Transaction[]): ForfeitureEven
     );
 }
 
+function maxHistoryTransactionDateByYearFromInputs(
+    individualHistory: Individual.Transaction[],
+    eacHistory: EAC.Transaction[]
+): Record<string, Date> {
+    const datesByYear = new Map<number, Date[]>();
+    const push = (d: Date) => {
+        const y = d.getFullYear();
+        const list = datesByYear.get(y) ?? [];
+        list.push(d);
+        datesByYear.set(y, list);
+    };
+    for (const t of individualHistory) {
+        push(t.date);
+    }
+    for (const t of eacHistory) {
+        push(t.date);
+    }
+    const result: Record<string, Date> = {};
+    for (const [year, dates] of datesByYear) {
+        result[String(year)] = max(dates);
+    }
+    return result;
+}
+
 function buildYearEndStatementsByYear(
     periods: string[],
     individualLots: Lot[],
@@ -546,5 +572,6 @@ export function calculateTaxResults(
                 eacLots,
                 eacForfeitureEvents
             ),
+            maxHistoryTransactionDateByYear: maxHistoryTransactionDateByYearFromInputs(individualHistory, eacHistory),
         };
     }

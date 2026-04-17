@@ -1,6 +1,6 @@
 import { ComponentStory, ComponentMeta } from '@storybook/react';
-import { compareAsc } from 'date-fns';
-import { random } from 'lodash';
+import { compareAsc, max } from 'date-fns';
+import { random, uniq } from 'lodash';
 import { TaxSaleOfSecurity } from '../calculator';
 
 import { ResultsPanel } from '../ResultsPanel/ResultsPanel';
@@ -53,17 +53,30 @@ const saleOfSecurity = (data: Partial<TaxSaleOfSecurity> = {}): TaxSaleOfSecurit
   }
 }
 
+const primaryTaxReport = [
+  saleOfSecurity(),
+  saleOfSecurity(),
+  saleOfSecurity(),
+  saleOfSecurity(),
+  saleOfSecurity(),
+  saleOfSecurity(),
+  saleOfSecurity(),
+  saleOfSecurity(),
+].sort((a, b) => compareAsc(a.saleDate, b.saleDate));
+
+const primaryYears = uniq(primaryTaxReport.map((t) => t.saleDate.getFullYear().toString())).sort();
+
 export const Primary = Template.bind({});
 // More on args: https://storybook.js.org/docs/react/writing-stories/args
 Primary.args = {
-  taxReport: [
-    saleOfSecurity(),
-    saleOfSecurity(),
-    saleOfSecurity(),
-    saleOfSecurity(),
-    saleOfSecurity(),
-    saleOfSecurity(),
-    saleOfSecurity(),
-    saleOfSecurity(),
-  ].sort((a,b) => compareAsc(a.saleDate, b.saleDate))
+  taxReport: primaryTaxReport,
+  yearEndStatementsByYear: Object.fromEntries(
+    primaryYears.map((y) => [y, { individual: [], eac: [] }])
+  ),
+  maxHistoryTransactionDateByYear: Object.fromEntries(
+    primaryYears.map((y) => {
+      const inYear = primaryTaxReport.filter((t) => t.saleDate.getFullYear().toString() === y);
+      return [y, max(inYear.map((t) => t.saleDate))];
+    })
+  ),
 };

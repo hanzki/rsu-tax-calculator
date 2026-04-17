@@ -103,6 +103,7 @@ function App() {
           { calculationResult && <ResultsPanel
             taxReport={calculationResult.taxReport}
             yearEndStatementsByYear={calculationResult.yearEndStatementsByYear}
+            maxHistoryTransactionDateByYear={calculationResult.maxHistoryTransactionDateByYear}
           /> }
 
           { (calculating || calculationResult) && <Divider variant='middle' sx={{m: 1}}/>}

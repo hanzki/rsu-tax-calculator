@@ -476,6 +476,10 @@ describe('calculator', () => {
 
             const result = Calculator.calculateTaxResults(individualHistory, eacHistory, ecbConverterMock);
 
+            expect(result.maxHistoryTransactionDateByYear['2020']).toEqual(new Date(2020, 0, 15));
+            expect(result.maxHistoryTransactionDateByYear['2021']).toEqual(new Date(2021, 8, 1));
+            expect(result.maxHistoryTransactionDateByYear['2022']).toEqual(new Date(2022, 8, 1));
+
             expect(Object.keys(result.yearEndStatementsByYear)).toEqual(['2021', '2022']);
 
             expect(result.yearEndStatementsByYear['2021']).toEqual({
