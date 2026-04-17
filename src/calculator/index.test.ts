@@ -24,6 +24,29 @@ describe('calculator', () => {
         });
     });
 
+    describe('filterHistoriesAfterYearEndReport', () => {
+        it('removes transactions on or before reportThroughDate', () => {
+            const cutoff = new Date(2021, 5, 15);
+            const individualHistory: Individual.Transaction[] = [
+                IndividualHistoryData.sellTransaction({ date: new Date(2021, 5, 10), quantity: 1 }),
+                IndividualHistoryData.sellTransaction({ date: new Date(2021, 5, 15), quantity: 2 }),
+                IndividualHistoryData.sellTransaction({ date: new Date(2021, 5, 16), quantity: 3 }),
+            ];
+            const eacHistory: EAC.Transaction[] = [
+                EACHistoryData.lapseTransaction({ date: new Date(2021, 5, 14) }),
+                EACHistoryData.lapseTransaction({ date: new Date(2021, 6, 1) }),
+            ];
+            const { individualHistory: ind, eacHistory: eac } = Calculator.filterHistoriesAfterYearEndReport(
+                individualHistory,
+                eacHistory,
+                cutoff
+            );
+            expect(ind.map(t => t.date.getTime())).toEqual([individualHistory[2].date.getTime()]);
+            expect(eac).toHaveLength(1);
+            expect(eac[0].date.getTime()).toEqual(eacHistory[1].date.getTime());
+        });
+    });
+
     describe('filterOutOptionSales', () => {
         let stockTransactions: Calculator.StockTransaction[];
         let eacHistory: EAC.Transaction[];
@@ -89,7 +112,6 @@ describe('calculator', () => {
                         ],
                         details: {
                             exerciseCostUSD: 1250,
-                            grossProceedsUSD: 4750,
                             netProceedsUSD: 3499,
                         }
                     })
@@ -418,7 +440,6 @@ describe('calculator', () => {
                             purchaseDate: new Date(2020, 0, 2),
                             purchasePriceUSD: 9,
                             purchaseFMVUSD: 10,
-                            grossProceedsUSD: 120,
                         }
                     ]
                 },
@@ -440,7 +461,6 @@ describe('calculator', () => {
                             purchaseDate: new Date(2020, 0, 2),
                             purchasePriceUSD: 9,
                             purchaseFMVUSD: 10,
-                            grossProceedsUSD: 180,
                         }
                     ]
                 }
@@ -452,6 +472,10 @@ describe('calculator', () => {
             } as ECBConverter;
 
             const result = Calculator.calculateTaxResults(individualHistory, eacHistory, ecbConverterMock);
+
+            expect(result.maxHistoryTransactionDateByYear['2020']).toEqual(new Date(2020, 0, 15));
+            expect(result.maxHistoryTransactionDateByYear['2021']).toEqual(new Date(2021, 8, 1));
+            expect(result.maxHistoryTransactionDateByYear['2022']).toEqual(new Date(2022, 8, 1));
 
             expect(Object.keys(result.yearEndStatementsByYear)).toEqual(['2021', '2022']);
 

@@ -6,7 +6,7 @@ import { TaxSaleOfSecurity, YearEndStatementsByYear } from "../calculator";
 import { PeriodSelector } from "./PeriodSelector";
 import { SaleOfSecuritiesTable } from "./SaleOfSecuritiesTable";
 import { InsightCard } from "./InsightCard";
-import { endOfYear, format, max } from "date-fns";
+import { endOfYear, format } from "date-fns";
 
 declare global {
     interface Navigator {
@@ -17,6 +17,7 @@ declare global {
 export type ResultsPanelProps = {
     taxReport: TaxSaleOfSecurity[],
     yearEndStatementsByYear: YearEndStatementsByYear,
+    maxHistoryTransactionDateByYear: Record<string, Date>,
 }
 
 const Spacer = () => <Box sx={{m: 1}}/>;
@@ -60,7 +61,8 @@ const CSV_EXPORT_COLUMNS: (keyof ReturnType<typeof formatForExport>)[] = [
 
 export const ResultsPanel: React.FC<ResultsPanelProps> = ({
     taxReport,
-    yearEndStatementsByYear
+    yearEndStatementsByYear,
+    maxHistoryTransactionDateByYear,
 }) => {
     const periods = uniq(taxReport.map(t => t.saleDate.getFullYear().toString())).sort();
     if (periods.length < 1) {
@@ -112,9 +114,10 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
         });
 
         const latestPeriod = periods[periods.length - 1];
+        const latestEventInYear = maxHistoryTransactionDateByYear[period];
         const throughDate =
-            period === latestPeriod && salesWithinPeriod.length > 0
-                ? max(salesWithinPeriod.map(t => t.saleDate))
+            period === latestPeriod && latestEventInYear !== undefined
+                ? latestEventInYear
                 : endOfYear(new Date(parseInt(period, 10), 0, 1));
         const reportThroughDate = format(throughDate, 'yyyy-MM-dd');
 

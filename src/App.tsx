@@ -41,7 +41,8 @@ function App() {
             settings.individualHistory,
             settings.eacHistory,
             ecbConverter,
-            settings.earlierLots
+            settings.earlierLots,
+            settings.earlierEacLots
           ));
         } catch (error: any) {
           setError(error);
@@ -102,6 +103,7 @@ function App() {
           { calculationResult && <ResultsPanel
             taxReport={calculationResult.taxReport}
             yearEndStatementsByYear={calculationResult.yearEndStatementsByYear}
+            maxHistoryTransactionDateByYear={calculationResult.maxHistoryTransactionDateByYear}
           /> }
 
           { (calculating || calculationResult) && <Divider variant='middle' sx={{m: 1}}/>}
